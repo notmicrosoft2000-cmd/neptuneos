@@ -39,8 +39,8 @@
         '<div class="window-titlebar">' +
         '  <img class="window-title-icon" src="' + (o.icon || "") + '" alt="">' +
         '  <div class="window-title"></div>' +
-        '  <button class="title-btn minimize" title="Minimize">&#95;</button>' +
-        '  <button class="title-btn maximize" title="Maximize">&#9633;</button>' +
+        '  <button class="title-btn minimize" title="Minimize"></button>' +
+        '  <button class="title-btn maximize" title="Maximize"></button>' +
         '  <button class="title-btn close" title="Close">&times;</button>' +
         "</div>" +
         '<div class="window-content"></div>';

@@ -11,11 +11,10 @@
 
   const WALLPAPERS = {
     hills: {
-      name: "Rolling Hills",
+      name: "Bliss",
       css:
-        "radial-gradient(ellipse 60% 45% at 50% 62%, #2f8f6f 0%, #1e6b52 35%, transparent 70%)," +
-        "radial-gradient(ellipse 70% 40% at 50% 115%, #0f4a38 0%, transparent 60%)," +
-        "linear-gradient(180deg, #7ab8e8 0%, #a8d4f0 45%, #bfe2a0 60%, #7fbf7f 100%)",
+        "radial-gradient(ellipse 55% 40% at 78% 22%, rgba(255,255,255,0.95) 18%, rgba(255,255,255,0.75) 38%, transparent 58%)," +
+        "linear-gradient(180deg, #3f83d9 0%, #7ab8f0 38%, #a8d4f0 46%, #7fb877 50%, #5a944a 62%, #4a8440 100%)",
     },
     teal: {
       name: "Classic Teal",

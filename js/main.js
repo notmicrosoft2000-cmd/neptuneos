@@ -75,6 +75,7 @@
     OS.startmenu.init();
     OS.taskbar.init();
     OS.sfx.init();
+    OS.fullscreen.init();
 
     const bootScreen = document.getElementById("boot-screen");
     const bootFill = bootScreen.querySelector(".boot-bar-fill");

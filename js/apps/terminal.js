@@ -209,6 +209,7 @@
       case "play": return cmdPlay(args);
       case "stop": return cmdStop();
       case "beep": return cmdBeep();
+      case "fullscreen": case "fs": return cmdFullscreen();
       case "emptybin": return cmdEmptyBin();
       case "exit": case "quit": case "bye": return win.close();
       case "shutdown": return OS.desktop.shutdown();
@@ -260,6 +261,7 @@
       "  play <file>  Plays an audio file in Media Player\n" +
       "  stop         Stops the music\n" +
       "  beep         It boots. It beeps.\n" +
+      "  fullscreen   Toggle fullscreen mode\n" +
       "  emptybin     Empties the Recycle Bin\n" +
       "  shutdown / restart\n" +
       "  exit         Closes this window\n",
@@ -463,6 +465,11 @@
   function cmdBeep() {
     print("BEEP.\n", "t-ok");
     OS.sfx.beepNow();
+  }
+
+  function cmdFullscreen() {
+    OS.fullscreen.toggle();
+    print(OS.fullscreen.isActive() ? "Entered fullscreen.\n" : "Exited fullscreen.\n", "t-ok");
   }
 
   function cmdEmptyBin() {

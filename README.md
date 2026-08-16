@@ -2,7 +2,7 @@
 
 > A Neptune Productions product. It boots. It beeps.
 
-A classic Windows-style **desktop operating system shell** that runs entirely in your browser. Written in plain HTML, CSS and JavaScript — no frameworks, no build step, no backend. Open `index.html` and it boots like a real OS.
+A Windows XP–style **desktop operating system shell** that runs entirely in your browser. Written in plain HTML, CSS and JavaScript — no frameworks, no build step, no backend. Open `index.html` and it boots like a real OS.
 
 ![stack](https://img.shields.io/badge/stack-HTML%2FCSS%2FJS-blue)
 ![zero-deps](https://img.shields.io/badge/dependencies-none-brightgreen)
@@ -10,17 +10,21 @@ A classic Windows-style **desktop operating system shell** that runs entirely in
 
 ## What you can do
 
+- **Windows XP "Luna" theme** — blue-glass titlebars, green start button, Bliss wallpaper, XP taskbar, menus and dialogs
 - **Full window manager** — drag, resize (8 directions), minimize, maximize, Alt+F4 to close, z-order focus, taskbar buttons
 - **Virtual file system** — real folders/files persisted in `localStorage`, with a Recycle Bin that restores items to their original location
 - **Media Player** — a jukebox of 5 chiptune tracks synthesized at runtime (no audio files shipped), plus import your own songs. Playlist, seek, volume, and a live visualizer
-- **MS-DOS Prompt terminal** — `dir`, `cd`, `mkdir`, `del`, `type`, `echo`, `copy`, `move`, `ren`, `tree`, `color`, `start`, `play`, `music`, `beep`, `emptybin`, `shutdown` and more
+- **MS-DOS Prompt terminal** — `dir`, `cd`, `mkdir`, `del`, `type`, `echo`, `copy`, `move`, `ren`, `tree`, `color`, `start`, `play`, `music`, `beep`, `fullscreen`, `emptybin`, `shutdown` and more
 - **My Computer (Explorer)** — back/forward/up navigation, address bar, sidebar, new folder/file, rename, delete-to-Recycle-Bin
 - **Notepad** — File & Edit menus, open/save, line/column + char count
 - **Paint** — pencil, eraser, line, rectangle, ellipse, flood fill, 16-color palette + custom picker
 - **Calculator** — classic immediate-execution four-function
-- **Control Panel** — wallpaper gallery (7 styles including "Neptune"), accent color, system info, file system reset
+- **Control Panel** — wallpaper gallery (7 styles including "Bliss" and "Neptune"), accent color, system info, file system reset
+- **Fullscreen** — the tray button (or the `fullscreen` command) goes fullscreen
+- **Custom cursor** — XP arrow pointer everywhere
+- **Touchscreen support** — a virtual mouse follows your finger: one tap = left click, double-tap or press-and-hold = right click, dragging works too
 - **Sound effects** — a startup chime on first click (autoplay policies mean it can't play sooner) and soft UI blips. Type `beep` in the terminal
-- **Start menu** with program list, shutdown & restart
+- **Start menu** with program list, pinned places, shutdown & restart
 - **Desktop** — draggable icons, rubber-band selection, right-click context menus, boot & shutdown screens
 
 ## Run it locally
@@ -60,6 +64,15 @@ No Actions workflow needed because the site is 100% static.
 | `Ctrl+C` | Cancel the current terminal command |
 | `↑` / `↓` | Command history in the terminal |
 
+## Touchscreen
+
+On a touch device the OS keeps a virtual mouse instead of relying on fat-finger taps:
+
+- touch anywhere to move the cursor under your finger
+- **one tap** = left click
+- **double-tap** (or press-and-hold without moving) = right click
+- drag by holding your finger down and moving
+
 ## Terminal cheat sheet
 
 ```
@@ -77,6 +90,7 @@ start readme.txt          open a file with its app
 play pixel-dreams.wav     play a song in Media Player
 music                     open Media Player
 beep                      it boots. it beeps.
+fullscreen                toggle fullscreen mode
 calc / notepad / paint    launch programs
 color 0a                  black background, light green text
 emptybin                  empty the Recycle Bin
@@ -94,10 +108,11 @@ neptuneos/
 │   ├── windows.css       window chrome & resize handles
 │   └── apps.css          per-app styles
 ├── js/
-│   ├── core/             fs, wav (chiptune synth), sfx, window manager, taskbar, start menu, desktop
+│   ├── core/             fs, wav (chiptune synth), sfx, wm, fullscreen, touch mouse, taskbar, start menu, desktop
 │   ├── apps/             notepad, terminal, explorer, paint, calculator, settings, recycle bin, media player
 │   └── main.js           bootstrap
 ├── assets/icons/         hand-drawn SVG icons
+├── assets/cursors/       custom cursor artwork
 └── test.html             headless test harness
 ```
 

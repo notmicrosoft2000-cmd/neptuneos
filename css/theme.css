@@ -1,18 +1,24 @@
-/* ===== neptuneOS theme: classic Windows 98 palette ===== */
+/* ===== neptuneOS theme: Windows XP "Luna" palette ===== */
 :root {
-  --face: #c0c0c0;
+  --face: #ece9d8;
   --face-light: #ffffff;
-  --face-dark: #808080;
-  --face-darker: #404040;
-  --title-blue: #000080;
-  --title-blue-hi: #1084d0;
-  --title-gray: #808080;
+  --face-dark: #aca899;
+  --face-darker: #716f64;
+  --title-blue: #245edc;
+  --title-blue-hi: #3a6ea5;
+  --title-blue-top: #5a9cf8;
+  --title-gray: #8f9bb0;
   --desktop-teal: #008080;
   --text: #000000;
   --text-dim: #404040;
-  --accent: #000080;
-  --highlight: #000080;
-  --menu: #c0c0c0;
+  --accent: #316ac5;
+  --highlight: #316ac5;
+  --menu: #ffffff;
+  --xp-start: #4baf32;
+  --xp-start-dark: #2f8a1c;
+  --bliss:
+    radial-gradient(ellipse 55% 40% at 78% 22%, rgba(255,255,255,0.95) 18%, rgba(255,255,255,0.75) 38%, transparent 58%),
+    linear-gradient(180deg, #3f83d9 0%, #7ab8f0 38%, #a8d4f0 46%, #7fb877 50%, #5a944a 62%, #4a8440 100%);
 }
 
 * { box-sizing: border-box; }
@@ -22,14 +28,29 @@ html, body {
   padding: 0;
   height: 100%;
   overflow: hidden;
-  font-family: "Tahoma", "Segoe UI", "MS Sans Serif", "Arial", sans-serif;
+  font-family: "Tahoma", "Segoe UI", "Arial", sans-serif;
   font-size: 13px;
   color: var(--text);
   user-select: none;
   -webkit-user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 img { -webkit-user-drag: none; user-select: none; }
+
+/* ===== Custom XP cursor ===== */
+:root {
+  --cursor: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M1%201%20L1%2020%20L4.6%2016.4%20L7.6%2022.6%20L10.2%2021.2%20L7.2%2015%20L15%2015%20Z%22%20fill%3D%22%23ffffff%22%20stroke%3D%22%23000000%22%20stroke-width%3D%221.1%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E") 1 1;
+}
+* { cursor: var(--cursor), auto; }
+.btn, .taskbar-btn, .window-task, .tool-btn, .title-btn, .app-menubar .menu-label {
+  cursor: var(--cursor), default;
+}
+input[type="text"], input[type="number"], textarea {
+  cursor: var(--cursor), text;
+}
+input[type="range"]::-webkit-slider-thumb { cursor: var(--cursor), default; }
 
 /* ===== 3D borders ===== */
 .outset { border: 2px solid; border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light); }
@@ -37,52 +58,56 @@ img { -webkit-user-drag: none; user-select: none; }
 .raised { border: 1px solid; border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light); }
 .sunken { border: 1px solid; border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker); }
 
-/* ===== Buttons ===== */
+/* ===== Buttons (XP style) ===== */
 .btn {
   font-family: inherit;
   font-size: 13px;
-  padding: 4px 14px;
-  background: var(--face);
-  border: 2px solid;
-  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
-  outline: 1px solid var(--face-darker);
-  outline-offset: -3px;
-  cursor: pointer;
-  min-width: 72px;
+  padding: 3px 14px 4px;
+  color: var(--text);
+  background: linear-gradient(180deg, #ffffff 0%, #ecebe5 50%, #d8d0c4 51%, #d5d0c8 100%);
+  border: 1px solid #003c74;
+  border-radius: 3px;
+  outline: none;
+  box-shadow: 1px 1px 0 #fff inset, -1px -1px 0 #7b7b7b inset;
 }
+.btn:hover { background: linear-gradient(180deg, #ffffff 0%, #f2eede 50%, #e0d8c8 51%, #dcd5c5 100%); }
 .btn:active, .btn.pressed {
-  border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker);
+  background: linear-gradient(180deg, #d5d0c8 0%, #e0d8c8 50%, #ecebe5 51%, #f5f3ed 100%);
+  box-shadow: -1px -1px 0 #7b7b7b inset, 1px 1px 0 #fff inset;
 }
-.btn:focus { outline: 1px dotted var(--text-dim); }
+.btn:focus { outline: 1px dotted var(--text-dim); outline-offset: -4px; }
 
 /* ===== Inputs ===== */
 input[type="text"], input[type="number"], select, textarea {
   font-family: inherit;
   font-size: 13px;
   background: #fff;
-  border: 2px solid;
-  border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker);
+  border: 1px solid #7f9db9;
+  border-radius: 2px;
   outline: none;
-  padding: 3px 4px;
+  padding: 2px 4px;
 }
-input:focus, select:focus { outline: 1px dotted var(--text-dim); }
+input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+  border-color: #0054e3;
+  box-shadow: 0 0 0 1px rgba(0, 84, 227, 0.35);
+}
 
-/* ===== Scrollbars ===== */
-::-webkit-scrollbar { width: 16px; height: 16px; }
-::-webkit-scrollbar-track { background: var(--face-dark); }
+/* ===== Scrollbars (XP style) ===== */
+::-webkit-scrollbar { width: 17px; height: 17px; }
+::-webkit-scrollbar-track { background: #f0f0f0; }
 ::-webkit-scrollbar-thumb {
-  background: var(--face);
-  border: 2px solid;
-  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  background: linear-gradient(90deg, #d4d0c8 0%, #ecebe5 100%);
+  border: 1px solid #aca899;
+  border-radius: 2px;
+  box-shadow: 1px 1px 0 #fff inset;
 }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #b8d4f5 0%, #d8ecff 100%); }
+::-webkit-scrollbar-corner { background: #f0f0f0; }
 ::-webkit-scrollbar-button { display: none; }
 
-/* ===== Desktop (default wallpaper) ===== */
+/* ===== Desktop default wallpaper (Bliss) ===== */
 #wallpaper {
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(ellipse 60% 45% at 50% 62%, #2f8f6f 0%, #1e6b52 35%, transparent 70%),
-    radial-gradient(ellipse 70% 40% at 50% 115%, #0f4a38 0%, transparent 60%),
-    linear-gradient(180deg, #7ab8e8 0%, #a8d4f0 45%, #bfe2a0 60%, #7fbf7f 100%);
+  background: var(--bliss);
 }

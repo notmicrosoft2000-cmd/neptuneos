@@ -26,9 +26,9 @@
     <div id="context-menu" hidden></div>
   </div>
   <div id="taskbar">
-    <button id="start-btn"><img src="assets/icons/flag.svg"><span>Start</span></button>
+    <button id="start-btn"><img src="assets/icons/neptuneos.svg"><span>Start</span></button>
     <div id="task-list"></div>
-    <div id="tray"><div id="clock">--:--</div></div>
+    <div id="tray"><button class="tray-btn" id="fullscreen-btn"><img src="assets/icons/fullscreen.svg"></button><div id="clock">--:--</div></div>
   </div>
   <div id="start-menu" hidden></div>
   <div id="dialog-layer" hidden></div>
@@ -37,6 +37,8 @@
   <script src="js/core/wav.js"></script>
   <script src="js/core/sfx.js"></script>
   <script src="js/core/wm.js"></script>
+  <script src="js/core/fullscreen.js"></script>
+  <script src="js/core/touchmouse.js"></script>
   <script src="js/core/taskbar.js"></script>
   <script src="js/core/startmenu.js"></script>
   <script src="js/core/desktop.js"></script>
@@ -159,6 +161,33 @@
           ok("start menu has Media Player", document.getElementById("start-menu").textContent.includes("Media Player"));
           ok("desktop has Media Player icon", document.getElementById("icon-layer").textContent.includes("Media Player"));
           ok("shutdown screen hidden on boot", document.getElementById("shutdown-screen").hidden);
+
+          /* XP theme + fullscreen + touch mouse */
+          ok("XP face palette applied", getComputedStyle(document.documentElement).getPropertyValue("--face").trim() === "#ece9d8");
+          ok("dialog layer not blocking when hidden", getComputedStyle(document.getElementById("dialog-layer")).display === "none");
+          ok("fullscreen API present", !!OS.fullscreen && typeof OS.fullscreen.toggle === "function");
+          ok("fullscreen tray button present", !!document.getElementById("fullscreen-btn"));
+          ok("touch mouse API present", !!OS.touchmouse && typeof OS.touchmouse.clickAt === "function" && typeof OS.touchmouse.rightClickAt === "function");
+          const probeBtn = document.createElement("button");
+          probeBtn.id = "probe-btn";
+          probeBtn.style.position = "fixed";
+          probeBtn.style.left = "10px";
+          probeBtn.style.top = "10px";
+          probeBtn.style.width = "50px";
+          probeBtn.style.height = "50px";
+          document.body.appendChild(probeBtn);
+          const bootEl = document.getElementById("boot-screen");
+          if (bootEl) bootEl.remove(); /* headless never fires animationend */
+          let clicks = 0, menus = 0;
+          probeBtn.addEventListener("click", () => clicks++);
+          probeBtn.addEventListener("contextmenu", (e) => { e.preventDefault(); menus++; });
+          OS.touchmouse.clickAt(35, 35);
+          ok("touch left click fires click", clicks === 1);
+          OS.touchmouse.rightClickAt(35, 35);
+          ok("touch right click fires contextmenu", menus === 1);
+          OS.touchmouse._ensureCursor();
+          ok("virtual cursor exists", !!document.getElementById("virtual-cursor"));
+          probeBtn.remove();
 
           /* clicking a track loads audio into the player element */
           const mpTrack = mpWin.content.querySelector(".player-track");
