@@ -11,14 +11,23 @@
     enabled: true,
     unlocked: false,
 
+    /* Shared AudioContext for all of neptuneOS (sfx + media player).
+       Created/resumed inside user gestures so autoplay policy allows it. */
+    context() {
+      if (!this.ctx) {
+        try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+      }
+      if (this.ctx.state === "suspended") {
+        try { this.ctx.resume(); } catch (e) {}
+      }
+      return this.ctx;
+    },
+
     init() {
       const unlock = () => {
         if (this.unlocked) return;
         this.unlocked = true;
-        try {
-          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-          this.chime();
-        } catch (e) { /* audio unavailable, stay silent */ }
+        if (this.context()) this.chime();
         window.removeEventListener("pointerdown", unlock);
         window.removeEventListener("keydown", unlock);
         this.wireClicks();
@@ -63,9 +72,7 @@
 
     /* standalone beep command for the terminal */
     beepNow() {
-      if (!this.ctx) {
-        try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
-      }
+      if (!this.context()) return;
       this.beep();
     },
   };

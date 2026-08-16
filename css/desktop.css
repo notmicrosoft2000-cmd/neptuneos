@@ -35,6 +35,7 @@
 @keyframes boot-fill { to { width: 100%; } }
 
 /* ===== Shutdown screen ===== */
+#shutdown-screen[hidden] { display: none; }
 #shutdown-screen {
   position: fixed;
   inset: 0;

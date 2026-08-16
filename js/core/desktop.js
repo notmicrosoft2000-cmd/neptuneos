@@ -73,6 +73,7 @@
       document.getElementById("icon-layer").addEventListener("contextmenu", (e) => e.preventDefault());
       document.getElementById("desktop").addEventListener("contextmenu", (e) => this.showContextMenu(e));
       document.getElementById("window-layer").addEventListener("mousedown", () => this.clearSelection());
+      document.getElementById("restart-btn").addEventListener("click", () => this.restart());
     },
 
     /* ---------- icons ---------- */

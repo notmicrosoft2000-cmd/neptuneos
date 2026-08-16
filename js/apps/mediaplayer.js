@@ -172,9 +172,11 @@
     if (i < 0 || i >= playlist.length) return;
     currentIndex = i;
     const t = playlist[i];
+    ensureAnalyser();
     audio.src = t.url;
     audio.volume = Number(volEl.value);
-    audio.play();
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {});
     win.setTitle("Now Playing \u2014 " + t.name + " \u2014 Media Player");
     highlight();
   }
@@ -187,8 +189,10 @@
       const url = OS.fs.read(norm);
       if (url && url.startsWith("data:audio")) {
         currentIndex = -1;
+        ensureAnalyser();
         audio.src = url;
-        audio.play();
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => {});
         const name = norm.split("/").pop();
         marqueeEl.textContent = "PLAYING \u2014 " + name;
         win.setTitle("Now Playing \u2014 " + name + " \u2014 Media Player");
@@ -198,7 +202,13 @@
 
   function togglePlay() {
     if (audio.src) {
-      audio.paused ? audio.play() : audio.pause();
+      ensureAnalyser();
+      if (audio.paused) {
+        const p = audio.play();
+        if (p && p.catch) p.catch(() => {});
+      } else {
+        audio.pause();
+      }
     } else if (playlist.length) {
       playIndex(currentIndex >= 0 ? currentIndex : 0);
     }
@@ -271,17 +281,21 @@
   }
 
   /* ---------- visualizer ---------- */
+  /* The audio element's output must be routed through a *running*
+     AudioContext or it goes silent. Use the shared neptuneOS context
+     (created/resumed inside user gestures) and hook it up before play(). */
   function ensureAnalyser() {
-    if (analyser || !audio) return;
+    if (analyser) return;
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = OS.sfx.context();
+      if (!ctx) return;
       const src = ctx.createMediaElementSource(audio);
       analyser = ctx.createAnalyser();
       analyser.fftSize = 128;
       analyser.smoothingTimeConstant = 0.8;
       src.connect(analyser);
       analyser.connect(ctx.destination);
-    } catch (err) { /* keep animated fallback below */ }
+    } catch (err) { analyser = null; }
   }
 
   function startVisualizer() {

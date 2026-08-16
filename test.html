@@ -12,7 +12,12 @@
 <body>
   <div id="results"></div>
   <div id="boot-screen"><div class="boot-inner"><div class="boot-bar"><div class="boot-bar-fill"></div></div></div></div>
-  <div id="shutdown-screen" hidden></div>
+  <div id="shutdown-screen" hidden>
+    <div class="shutdown-inner">
+      <div class="shutdown-text">It's now safe to turn off your computer.</div>
+      <button class="btn" id="restart-btn">Restart</button>
+    </div>
+  </div>
   <div id="desktop">
     <div id="wallpaper"></div>
     <div id="icon-layer"></div>
@@ -48,6 +53,11 @@
     const results = [];
     const ok = (name, cond) => results.push((cond ? "PASS " : "FAIL ") + name + (cond ? "" : "  <-- check me"));
     const A = () => window.__retroos;
+    const render = () => {
+      const el = document.getElementById("results");
+      el.innerHTML = "<b>" + results.filter((r) => r.startsWith("PASS")).length + " passed / " + results.filter((r) => r.startsWith("FAIL")).length + " failed</b><br>" + results.join("<br>");
+      document.title = "TITLEMARKER " + results.filter((r) => r.startsWith("FAIL")).length + " FAILURES";
+    };
 
     window.addEventListener("load", () => {
       setTimeout(() => {
@@ -148,6 +158,23 @@
           ok("media player single instance", OS.apps.mediaplayer.launch() === mpWin);
           ok("start menu has Media Player", document.getElementById("start-menu").textContent.includes("Media Player"));
           ok("desktop has Media Player icon", document.getElementById("icon-layer").textContent.includes("Media Player"));
+          ok("shutdown screen hidden on boot", document.getElementById("shutdown-screen").hidden);
+
+          /* clicking a track loads audio into the player element */
+          const mpTrack = mpWin.content.querySelector(".player-track");
+          mpTrack.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+          const mpAudio = mpWin.content.querySelector("audio");
+          ok("play sets audio src", mpAudio.src.startsWith("data:audio/wav"));
+          ok("now-playing title set", /Now Playing/.test(mpWin.title));
+
+          /* audio really decodes and has a duration */
+          const aTest = new Audio(OS.wav.dataUrl("floppy-disc-fandango.wav"));
+          aTest.preload = "auto";
+          let aDone = false;
+          const aFinish = (name, cond) => { if (aDone) return; aDone = true; ok(name, cond); render(); };
+          aTest.addEventListener("loadedmetadata", () => aFinish("audio decodes + has duration", isFinite(aTest.duration) && aTest.duration > 0 && !aTest.error));
+          aTest.addEventListener("error", () => aFinish("audio decodes + has duration", false));
+          setTimeout(() => aFinish("audio decodes + has duration", false), 8000);
 
           /* dialog */
           OS.message("T", "hello dialog");
@@ -157,9 +184,7 @@
         } catch (err) {
           results.push("EXCEPTION: " + err.message + "\n" + (err.stack || ""));
         }
-        const el = document.getElementById("results");
-        el.innerHTML = "<b>" + results.filter((r) => r.startsWith("PASS")).length + " passed / " + results.filter((r) => r.startsWith("FAIL")).length + " failed</b><br>" + results.join("<br>");
-        document.title = "TITLEMARKER " + results.filter((r) => r.startsWith("FAIL")).length + " FAILURES";
+        render();
       }, 2500);
     });
   </script>
