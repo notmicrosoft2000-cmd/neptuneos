@@ -8,6 +8,14 @@
   window.OS = window.OS || {};
   OS.apps = OS.apps || {};
 
+  OS.brand = {
+    product: "NeptuneOS",
+    version: "1.0",
+    build: "2600",
+    copyright: "Copyright \u00a9 2026 Neptune Productions",
+    company: "Neptune Productions",
+  };
+
   function registerDesktopShortcuts() {
     const d = OS.desktop;
 
@@ -63,6 +71,18 @@
       id: "settings", label: "Control Panel",
       icon: "assets/icons/settings.svg",
       launch: () => OS.apps.settings.launch(),
+    });
+
+    d.addItem({
+      id: "snake", label: "Snake",
+      icon: "assets/icons/snake.svg",
+      launch: () => OS.apps.snake.launch(),
+    });
+
+    d.addItem({
+      id: "pacman", label: "Pacman",
+      icon: "assets/icons/pacman.svg",
+      launch: () => OS.apps.pacman.launch(),
     });
   }
 

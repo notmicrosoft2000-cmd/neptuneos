@@ -1,0 +1,412 @@
+/* =========================================================
+ * NeptuneOS — Setup wizard (OOBE) + logon screen
+ * Windows XP-style blue setup experience.
+ * ========================================================= */
+
+/* ---------- setup wizard ---------- */
+
+#setup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  background: linear-gradient(180deg, #123f9e 0%, #0d2f78 60%, #0a2563 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+}
+
+.setup-shell {
+  width: 760px;
+  max-width: 94vw;
+  height: 480px;
+  max-height: 88vh;
+  display: flex;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.setup-side {
+  width: 210px;
+  flex: none;
+  background: linear-gradient(180deg, #2b7fe0 0%, #1659c4 45%, #0d3f97 100%);
+  color: #fff;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.setup-side-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  margin-bottom: 16px;
+}
+
+.setup-side-brand img {
+  width: 40px;
+  height: 40px;
+}
+
+.setup-side-brand b {
+  font-size: 16px;
+}
+
+.setup-side-brand div {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #e4efff;
+}
+
+.setup-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setup-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #d4e6ff;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.setup-step span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.setup-step.current {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-weight: bold;
+}
+
+.setup-step.done {
+  color: #fff;
+}
+
+.setup-step.done span {
+  background: #48d14a;
+}
+
+.setup-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 26px;
+  min-width: 0;
+}
+
+.setup-heading h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  color: #1a56a6;
+  font-weight: normal;
+}
+
+.setup-heading p {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #444;
+}
+
+.setup-content {
+  flex: 1;
+  font-size: 12px;
+  color: #333;
+  line-height: 1.55;
+  overflow: auto;
+  min-height: 0;
+}
+
+.setup-list {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.setup-note {
+  color: #666;
+  margin-top: 12px;
+}
+
+.setup-eula {
+  border: 1px solid #9db9d9;
+  background: #f6f9fd;
+  height: 200px;
+  overflow: auto;
+  padding: 10px 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: #222;
+}
+
+.setup-radio {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setup-radio label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 340px;
+}
+
+.setup-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #333;
+}
+
+.setup-form input[type="text"],
+.setup-form input[type="password"],
+.setup-form select {
+  height: 24px;
+  border: 1px solid #7f9db9;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  background: #fff;
+}
+
+.setup-clock {
+  font-size: 26px;
+  color: #0d3f97;
+  font-weight: bold;
+  font-family: Consolas, monospace;
+  letter-spacing: 1px;
+}
+
+.setup-progress {
+  max-width: 420px;
+  margin: 18px 0;
+}
+
+.setup-progress-bar {
+  height: 16px;
+  border: 1px solid #0831d9;
+  background: #fff;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.setup-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(180deg, #6fb3f5 0%, #2b7fe0 55%, #1659c4 100%);
+  transition: width 0.5s linear;
+}
+
+.setup-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #333;
+}
+
+.setup-install-logo {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.setup-install-logo img {
+  width: 70px;
+  height: 70px;
+  animation: setup-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes setup-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.setup-done {
+  text-align: center;
+  padding-top: 16px;
+}
+
+.setup-done img {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 10px;
+}
+
+.setup-done p {
+  font-size: 13px;
+}
+
+.setup-actions-fixed {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.setup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #d7e2ee;
+  margin-top: 14px;
+}
+
+.setup-actions .btn {
+  min-width: 84px;
+}
+
+/* ---------- logon screen ---------- */
+
+#logon-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1590;
+  background: linear-gradient(180deg, #1c5fc9 0%, #0e3a92 55%, #09295f 100%);
+  font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#logon-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 50% at 50% 0%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 60%);
+  pointer-events: none;
+}
+
+.logon-top {
+  position: relative;
+  margin-top: 4vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.logon-top img {
+  width: 74px;
+  height: 74px;
+}
+
+.logon-top span {
+  font-size: 34px;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.logon-hint {
+  position: relative;
+  margin-top: 7vh;
+  font-size: 17px;
+  color: #dceaff;
+}
+
+.logon-users {
+  position: relative;
+  margin-top: 22px;
+}
+
+.logon-users button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 128px;
+  padding: 14px 8px;
+  background: linear-gradient(180deg, #e8f2ff 0%, #cfe2fb 100%);
+  border: 1px solid #0831d9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.logon-users button:hover {
+  outline: 2px solid #6fb3f5;
+}
+
+.logon-users img {
+  width: 46px;
+  height: 46px;
+}
+
+.logon-users span {
+  font-size: 13px;
+  font-weight: bold;
+  color: #123;
+}
+
+.logon-password {
+  position: relative;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 13px;
+  flex-direction: column;
+}
+
+.logon-password label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logon-password input {
+  width: 160px;
+  height: 24px;
+  border: 1px solid #9db9d9;
+  padding: 2px 6px;
+}
+
+.logon-err {
+  color: #ffd0d0;
+  font-size: 12px;
+  text-align: center;
+}
+
+.logon-off {
+  position: absolute;
+  bottom: 22px;
+  left: 24px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.logon-off:hover {
+  text-decoration: underline;
+}

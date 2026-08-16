@@ -1,7 +1,7 @@
 /* =========================================================
  * neptuneOS — Sound effects
- * "It boots. It beeps." The startup chime plays on the first
- * click, then soft UI blips. All synthesized with WebAudio.
+ * The startup chime plays on the first click, then soft UI
+ * blips. All synthesized with WebAudio.
  * ========================================================= */
 (function () {
   "use strict";

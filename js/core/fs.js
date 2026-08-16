@@ -42,11 +42,10 @@
 
     const readme = mk(docs, "readme.txt", "file");
     readme.content =
-      "Welcome to neptuneOS!\n" +
-      "=====================\n" +
+      "Welcome to NeptuneOS\n" +
+      "====================\n" +
       "\n" +
       "A Neptune Productions product.\n" +
-      "It boots. It beeps.\n" +
       "\n" +
       "This is a working desktop operating system shell written in plain\n" +
       "HTML, CSS and JavaScript. Everything runs in your browser.\n" +
@@ -55,7 +54,7 @@
       "  * Open the Terminal and type `help`\n" +
       "  * Play some music in Media Player\n" +
       "  * Browse files with My Computer\n" +
-      "  * Draw something in Paint\n" +
+      "  * Play Snake or Pacman from the Start menu\n" +
       "  * Write a note and save it from the File menu\n" +
       "  * Change your wallpaper in Settings\n" +
       "\n" +

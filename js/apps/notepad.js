@@ -38,6 +38,7 @@
         '<div class="app-menubar">' +
         '<div class="menu-label" data-menu="file">File</div>' +
         '<div class="menu-label" data-menu="edit">Edit</div>' +
+        '<div class="menu-label" data-menu="help">Help</div>' +
         "</div>" +
         '<textarea class="notepad-area" spellcheck="false"></textarea>' +
         '<div class="app-statusbar"><span id="np-pos">Ln 1, Col 1</span><span id="np-chars">0 chars</span></div>';
@@ -86,6 +87,10 @@
       { label: "Delete", action: () => { area.focus(); document.execCommand("delete"); closeMenus(); } },
       { sep: true },
       { label: "Select All", action: () => { area.focus(); area.select(); closeMenus(); } },
+    ]);
+
+    buildMenu("help", [
+      { label: "About Notepad", action: () => { OS.about("Notepad", app.icon); closeMenus(); } },
     ]);
   }
 

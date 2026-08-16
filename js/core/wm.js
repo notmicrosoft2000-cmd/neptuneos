@@ -254,7 +254,7 @@
     question: "assets/icons/msg-question.svg",
   };
 
-  function dialog({ title, message, icon, buttons, input, onClose }) {
+  function dialog({ title, message, icon, buttons, input, html, onClose }) {
     const layer = document.getElementById("dialog-layer");
     layer.hidden = false;
     layer.innerHTML = "";
@@ -263,20 +263,23 @@
     box.style.minWidth = input ? "360px" : "320px";
 
     let body = '<div class="dialog-title">' + esc(title || "neptuneOS") + "</div>";
-    body += '<div class="dialog-body" style="display:flex;gap:12px;align-items:flex-start;">';
-    if (icon) body += '<img src="' + (DIALOG_ICONS[icon] || "") + '" style="width:30px;height:30px;flex-shrink:0;" alt="">';
-    body += '<div style="flex:1;">' + esc(message || "") + "</div></div>";
-    if (input !== undefined) {
-      body += '<div class="dialog-body" style="margin-top:-6px;"><input type="text" id="dlg-input" value="' + esc(input) + '"></div>';
+    if (html !== undefined) {
+      box.innerHTML = body + html;
+    } else {
+      body += '<div class="dialog-body" style="display:flex;gap:12px;align-items:flex-start;">';
+      if (icon) body += '<img src="' + (DIALOG_ICONS[icon] || "") + '" style="width:30px;height:30px;flex-shrink:0;" alt="">';
+      body += '<div style="flex:1;">' + esc(message || "") + "</div></div>";
+      if (input !== undefined) {
+        body += '<div class="dialog-body" style="margin-top:-6px;"><input type="text" id="dlg-input" value="' + esc(input) + '"></div>';
+      }
+      body += '<div class="dialog-actions">';
+      const btnDefs = buttons || [{ label: "OK", value: null }];
+      btnDefs.forEach((b, i) => {
+        body += '<button class="btn" data-dlg-value="' + esc(b.value === undefined ? b.label : b.value) + '">' + esc(b.label) + "</button>";
+      });
+      body += "</div>";
+      box.innerHTML = body;
     }
-    body += '<div class="dialog-actions">';
-    const btnDefs = buttons || [{ label: "OK", value: null }];
-    btnDefs.forEach((b, i) => {
-      body += '<button class="btn" data-dlg-value="' + esc(b.value === undefined ? b.label : b.value) + '">' + esc(b.label) + "</button>";
-    });
-    body += "</div>";
-
-    box.innerHTML = body;
     layer.appendChild(box);
 
     let result = null;
@@ -286,7 +289,7 @@
       if (typeof onClose === "function") onClose(val);
     };
 
-    box.querySelectorAll(".dialog-actions .btn").forEach((b) => {
+    box.querySelectorAll(".dialog-actions .btn, [data-dlg-value]").forEach((b) => {
       b.addEventListener("click", () => {
         result = b.dataset.dlgValue;
         if (input !== undefined) {
@@ -300,7 +303,7 @@
       if (e.key === "Enter") finish(input !== undefined ? box.querySelector("#dlg-input").value : null);
       if (e.key === "Escape") finish(null);
     });
-    const first = box.querySelector("#dlg-input, .dialog-actions .btn");
+    const first = box.querySelector("#dlg-input, .dialog-actions .btn, [data-dlg-value]");
     if (first) { first.focus(); if (first.tagName === "INPUT") first.select(); }
   }
 
@@ -352,4 +355,24 @@
   window.OS.confirm = confirmDlg;
   window.OS.prompt = promptDlg;
   window.OS.esc = esc;
+
+  /* Branded "About" box used by apps (Help menus etc.) */
+  window.OS.about = function (appName, icon) {
+    const b = OS.brand || { product: "NeptuneOS", version: "1.0", build: "2600", copyright: "", company: "Neptune Productions" };
+    const html =
+      '<div class="about-box">' +
+      '<img src="' + esc(icon || "assets/icons/neptuneos.svg") + '" alt="">' +
+      '<div class="about-info">' +
+      "<b>" + esc(b.product) + " Version 5.1." + esc(b.build) + "</b>" +
+      "<div>" + esc(appName) + "</div>" +
+      "<div>" + esc(b.copyright) + ".</div>" +
+      "<div>" + esc(b.company) + "</div>" +
+      '<div class="about-detail">Desktop operating system shell. Written in plain HTML, CSS and JavaScript.</div>' +
+      "</div>" +
+      "</div>" +
+      '<div class="dialog-actions"><button class="btn" data-dlg-value="ok">OK</button></div>';
+    return new Promise((resolve) => {
+      dialog({ title: b.product, html, onClose: resolve });
+    });
+  };
 })();

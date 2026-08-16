@@ -1,8 +1,8 @@
 # neptuneOS
 
-> A Neptune Productions product. It boots. It beeps.
+> A Neptune Productions product. Version 5.1 (build 2600).
 
-A Windows XP–style **desktop operating system shell** that runs entirely in your browser. Written in plain HTML, CSS and JavaScript — no frameworks, no build step, no backend. Open `index.html` and it boots like a real OS.
+A Windows XP–style **desktop operating system shell** that runs entirely in your browser. Written in plain HTML, CSS and JavaScript — no frameworks, no build step, no backend. Open `index.html` and boot it like a real OS.
 
 ![stack](https://img.shields.io/badge/stack-HTML%2FCSS%2FJS-blue)
 ![zero-deps](https://img.shields.io/badge/dependencies-none-brightgreen)
@@ -10,21 +10,24 @@ A Windows XP–style **desktop operating system shell** that runs entirely in yo
 
 ## What you can do
 
+- **Setup wizard (OOBE)** — the first boot walks you through a Windows-style install: license agreement, user account & computer name, password, time zone, and an animated setup-progress step. Then a NeptuneOS **Welcome (logon) screen** appears on every boot — click your user name, enter your password, and you're in (disable it in Control Panel → System)
 - **Windows XP "Luna" theme** — blue-glass titlebars, green start button, Bliss wallpaper, XP taskbar, menus and dialogs
 - **Full window manager** — drag, resize (8 directions), minimize, maximize, Alt+F4 to close, z-order focus, taskbar buttons
 - **Virtual file system** — real folders/files persisted in `localStorage`, with a Recycle Bin that restores items to their original location
 - **Media Player** — a jukebox of 5 chiptune tracks synthesized at runtime (no audio files shipped), plus import your own songs. Playlist, seek, volume, and a live visualizer
-- **MS-DOS Prompt terminal** — `dir`, `cd`, `mkdir`, `del`, `type`, `echo`, `copy`, `move`, `ren`, `tree`, `color`, `start`, `play`, `music`, `beep`, `fullscreen`, `emptybin`, `shutdown` and more
+- **MS-DOS Prompt terminal** — `dir`, `cd`, `mkdir`, `del`, `type`, `echo`, `copy`, `move`, `ren`, `tree`, `color`, `start`, `play`, `music`, `beep`, `fullscreen`, `emptybin`, `setup`, `shutdown` and more
+- **Snake** — classic grid snake with speed-up scoring, pause and restart
+- **Pacman** — arcade Pacman on a procedurally generated maze: dots, power pellets, four ghosts, lives and score
 - **My Computer (Explorer)** — back/forward/up navigation, address bar, sidebar, new folder/file, rename, delete-to-Recycle-Bin
-- **Notepad** — File & Edit menus, open/save, line/column + char count
+- **Notepad** — File, Edit & Help menus (branded About box), open/save, line/column + char count
 - **Paint** — pencil, eraser, line, rectangle, ellipse, flood fill, 16-color palette + custom picker
-- **Calculator** — classic immediate-execution four-function
-- **Control Panel** — wallpaper gallery (7 styles including "Bliss" and "Neptune"), accent color, system info, file system reset
+- **Calculator** — classic immediate-execution four-function, with About
+- **Control Panel** — wallpaper gallery (7 styles including "Bliss" and "Neptune"), accent color, system info (registered user, computer name), log-on setting, file system reset, setup wizard
 - **Fullscreen** — the tray button (or the `fullscreen` command) goes fullscreen
 - **Custom cursor** — XP arrow pointer everywhere
 - **Touchscreen support** — a virtual mouse follows your finger: one tap = left click, double-tap or press-and-hold = right click, dragging works too
 - **Sound effects** — a startup chime on first click (autoplay policies mean it can't play sooner) and soft UI blips. Type `beep` in the terminal
-- **Start menu** with program list, pinned places, shutdown & restart
+- **Start menu** — user banner (your account name), grouped Accessories / Games / System lists, pinned places, shutdown & restart
 - **Desktop** — draggable icons, rubber-band selection, right-click context menus, boot & shutdown screens
 
 ## Run it locally
@@ -89,9 +92,11 @@ del notes.txt             permanently delete
 start readme.txt          open a file with its app
 play pixel-dreams.wav     play a song in Media Player
 music                     open Media Player
-beep                      it boots. it beeps.
+beep                      play a system beep
 fullscreen                toggle fullscreen mode
 calc / notepad / paint    launch programs
+snake / pacman            launch the games
+setup                     run the NeptuneOS setup wizard
 color 0a                  black background, light green text
 emptybin                  empty the Recycle Bin
 shutdown / restart        power options
@@ -103,14 +108,16 @@ shutdown / restart        power options
 neptuneos/
 ├── index.html            boot screen, desktop, taskbar, start menu
 ├── css/
-│   ├── theme.css         98-style palette & base widgets
+│   ├── theme.css         XP Luna palette & base widgets
 │   ├── desktop.css       desktop, taskbar, start menu, dialogs
 │   ├── windows.css       window chrome & resize handles
-│   └── apps.css          per-app styles
+│   ├── apps.css          per-app styles
+│   └── setup.css         setup wizard & logon screen styles
 ├── js/
 │   ├── core/             fs, wav (chiptune synth), sfx, wm, fullscreen, touch mouse, taskbar, start menu, desktop
-│   ├── apps/             notepad, terminal, explorer, paint, calculator, settings, recycle bin, media player
-│   └── main.js           bootstrap
+│   ├── apps/             notepad, terminal, explorer, paint, calculator, settings, recycle bin, media player, snake, pacman
+│   ├── main.js           bootstrap
+│   └── setup.js          OOBE setup wizard + logon screen
 ├── assets/icons/         hand-drawn SVG icons
 ├── assets/cursors/       custom cursor artwork
 └── test.html             headless test harness

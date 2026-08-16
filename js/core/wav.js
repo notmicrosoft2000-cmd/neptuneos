@@ -6,7 +6,7 @@
 (function () {
   "use strict";
 
-  const SAMPLE_RATE = 11025; // 8-bit, lo-fi, very 1987
+  const SAMPLE_RATE = 11025; // 8-bit lo-fi chiptune sampling rate
 
   const midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
 

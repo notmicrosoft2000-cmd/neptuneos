@@ -157,6 +157,19 @@
 
 /* ===== Calculator ===== */
 .calc { display: flex; flex-direction: column; gap: 8px; padding: 8px; background: var(--face); }
+.calc-top { display: flex; align-items: stretch; gap: 6px; }
+.calc-top .calc-display { flex: 1; }
+.calc-about {
+  width: 26px;
+  flex: none;
+  border: 1px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  background: #ece9d8;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+}
+.calc-about:hover { background: #f6f3e8; }
 .calc-display {
   text-align: right;
   font-family: "Lucida Console", monospace;
@@ -291,4 +304,77 @@ input[type="range"]::-webkit-slider-thumb {
   background: #c0c0c0;
   border: 2px solid;
   border-color: #fff #000 #000 #fff;
+}
+
+/* ---------- games (Snake, Pacman) ---------- */
+
+.game-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #000;
+  border: 1px solid #7f9db9;
+  margin: 3px;
+}
+
+.game-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: var(--title-blue);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-bottom: 1px solid #0831d9;
+  font-family: Tahoma, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.game-status span:last-child {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: #dceaff;
+}
+
+.game-wrap canvas {
+  flex: 1;
+  min-height: 0;
+  display: block;
+  margin: 0 auto;
+  image-rendering: pixelated;
+}
+
+/* ---------- About box ---------- */
+
+.about-box {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 4px 2px 8px;
+}
+
+.about-box img {
+  width: 42px;
+  height: 42px;
+  flex: none;
+}
+
+.about-info {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #222;
+}
+
+.about-info b {
+  font-size: 13px;
+  display: block;
+}
+
+.about-detail {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #555;
+  max-width: 280px;
 }

@@ -23,10 +23,11 @@
         .map((id) => OS.apps[id])
         .filter((a) => a.showInStart !== false);
 
-      const programs = apps
-        .filter((a) => a.group !== "system")
-        .sort((a, b) => a.name.localeCompare(b.name));
-      const system = apps.filter((a) => a.group === "system");
+      const sections = [
+        { title: "Accessories", group: "apps" },
+        { title: "Games", group: "games" },
+        { title: "System", group: "system" },
+      ];
       const pins = PINS.map((id) => OS.apps[id]).filter(Boolean);
 
       const programItem = (app) =>
@@ -36,15 +37,16 @@
 
       let html = '<div class="start-header">' +
         '<img src="assets/icons/user.svg" alt="">' +
-        '<span class="start-username">Guest</span>' +
-        '<span class="start-brand">neptuneOS</span></div>';
+        '<span class="start-username">' + OS.esc(OS.setup && OS.setup.userName ? OS.setup.userName() : "Guest") + '</span>' +
+        '<span class="start-brand">' + OS.esc(OS.brand ? OS.brand.product : "neptuneOS") + "</span></div>";
 
       html += '<div class="start-body"><div class="start-col">';
-      programs.forEach((app) => { html += programItem(app); });
-      if (system.length) {
-        html += '<div class="start-sep"></div>';
-        system.forEach((app) => { html += programItem(app); });
-      }
+      sections.forEach((section) => {
+        const items = apps.filter((a) => a.group === section.group).sort((a, b) => a.name.localeCompare(b.name));
+        if (!items.length) return;
+        html += '<div class="start-section">' + section.title + "</div>";
+        items.forEach((app) => { html += programItem(app); });
+      });
       html += "</div><div class=\"start-pins\">";
       pins.forEach((app) => {
         html += '<div class="start-pin" data-app="' + app.id + '">' +

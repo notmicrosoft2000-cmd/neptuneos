@@ -75,15 +75,34 @@
 
       function renderSystem() {
         const size = OS.fs.sizeOf("/C:");
+        const user = OS.setup && OS.setup.userName ? OS.setup.userName() : "Guest";
+        const computer = OS.setup && OS.setup.computerName ? OS.setup.computerName() : "NEPTUNE-1";
         body.innerHTML =
-          "<h3>About neptuneOS</h3>" +
-          "<p><b>neptuneOS 1.0</b> &mdash; a <b>Neptune Productions</b> product.<br>Classic Windows-style desktop shell written in plain HTML, CSS &amp; JavaScript.<br>It boots. It beeps. All files and settings are stored in your browser.</p>" +
-          "<p>Files on disk: <b>" + OS.fs.listRecursive("/C:").filter((f) => f.type === "file").length + "</b><br>" +
+          "<h3>About " + OS.brand.product + "</h3>" +
+          "<p><b>" + OS.brand.product + " Version 5.1." + OS.brand.build + "</b> &mdash; a <b>" + OS.brand.company + "</b> product.<br>" + OS.brand.copyright + ".<br>Desktop operating system shell written in plain HTML, CSS &amp; JavaScript. All files and settings are stored in your browser.</p>" +
+          "<p>Registered to: <b>" + user + "</b><br>" +
+          "Computer name: <b>" + computer + "</b><br>" +
+          "Files on disk: <b>" + OS.fs.listRecursive("/C:").filter((f) => f.type === "file").length + "</b><br>" +
           "Space used: <b>" + size + "</b> bytes</p>" +
+          '<label class="settings-check"><input type="checkbox" id="logon-toggle"' +
+          (OS.setup && OS.setup.logonEnabled && OS.setup.logonEnabled() ? " checked" : "") +
+          '> Require log on at startup</label>' +
           "<h3>Maintenance</h3>" +
+          '<button class="btn" id="setup-run">Run NeptuneOS setup wizard</button>' +
           '<button class="btn" id="reset-fs">Reset file system to defaults</button>' +
-          '<p style="font-size:11px;color:var(--text-dim);margin-top:8px;">This restores the original folders and sample files. Your saved work will be lost.</p>';
+          '<p style="font-size:11px;color:var(--text-dim);margin-top:8px;">Reset restores the original folders and sample files. Your saved work will be lost.</p>';
 
+        const logonToggle = body.querySelector("#logon-toggle");
+        if (logonToggle) {
+          logonToggle.addEventListener("change", () => {
+            OS.setup.setLogonEnabled(logonToggle.checked);
+          });
+        }
+        body.querySelector("#setup-run").addEventListener("click", () => {
+          OS.confirm("Control Panel", "Run the NeptuneOS setup wizard now?").then((ok) => {
+            if (ok && OS.setup && OS.setup.launch) OS.setup.launch();
+          });
+        });
         body.querySelector("#reset-fs").addEventListener("click", () => {
           OS.confirm("Control Panel", "Reset the file system to its defaults? This cannot be undone.").then((ok) => {
             if (!ok) return;

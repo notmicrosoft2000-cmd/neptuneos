@@ -83,6 +83,13 @@
       });
       toolsEl.appendChild(fillBtn);
 
+      const aboutBtn = document.createElement("button");
+      aboutBtn.className = "tool-btn";
+      aboutBtn.title = "About Paint";
+      aboutBtn.innerHTML = '<div style="font-size:13px;line-height:1;">?</div><div style="font-size:9px;margin-top:2px;">About</div>';
+      aboutBtn.addEventListener("click", () => OS.about("Paint", app.icon));
+      toolsEl.appendChild(aboutBtn);
+
       /* ---- palette ---- */
       PALETTE.forEach((c) => {
         const s = document.createElement("div");

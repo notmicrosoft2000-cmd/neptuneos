@@ -22,8 +22,10 @@
     updateClock() {
       const el = document.getElementById("clock");
       const d = new Date();
-      const h = String(d.getHours()).padStart(2, "0");
-      const m = String(d.getMinutes()).padStart(2, "0");
+      const off = OS.setup && OS.setup.timeZoneOffset ? OS.setup.timeZoneOffset() : 0;
+      const t = new Date(d.getTime() + off * 60000);
+      const h = String(t.getUTCHours()).padStart(2, "0");
+      const m = String(t.getUTCMinutes()).padStart(2, "0");
       el.textContent = h + ":" + m;
       el.title = d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
     },

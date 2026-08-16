@@ -43,7 +43,7 @@
       term.addEventListener("blur", () => { inputLine && inputLine.classList.add("blur"); });
 
       term.textContent = "";
-      print("neptuneOS [Version 1.0]\n(C) 2026 Neptune Productions. It boots. It beeps.\n", "t-cy");
+      print(OS.brand.product + " [Version 5.1." + OS.brand.build + "]\n" + OS.brand.copyright + "\n", "t-cy");
       newInputLine();
       term.focus();
     },
@@ -177,8 +177,8 @@
     const args = parts.slice(1);
 
     /* shortcut app launchers */
-    if (["calc", "calculator", "notepad", "paint", "explorer", "settings", "recycle", "mspaint", "music", "media", "player"].includes(cmd)) {
-      const map = { calc: "calculator", calculator: "calculator", notepad: "notepad", paint: "paint", mspaint: "paint", explorer: "explorer", settings: "settings", recycle: "recycle", music: "mediaplayer", media: "mediaplayer", player: "mediaplayer" };
+    if (["calc", "calculator", "notepad", "paint", "explorer", "settings", "recycle", "mspaint", "music", "media", "player", "snake", "pacman"].includes(cmd)) {
+      const map = { calc: "calculator", calculator: "calculator", notepad: "notepad", paint: "paint", mspaint: "paint", explorer: "explorer", settings: "settings", recycle: "recycle", music: "mediaplayer", media: "mediaplayer", player: "mediaplayer", snake: "snake", pacman: "pacman" };
       const appId = map[cmd];
       if (appId === "explorer" && args.length) OS.apps.explorer.launch({ path: OS.fs.normalize(joinCwd(args[0])) });
       else OS.apps[appId].launch();
@@ -201,8 +201,8 @@
       case "pwd": return print(promptString(), "t-out");
       case "date": return cmdDate();
       case "time": return cmdTime();
-      case "ver": return print("neptuneOS [Version 1.0]\n", "t-cy");
-      case "whoami": return print("neptuneos\\guest", "t-out");
+      case "ver": return print(OS.brand.product + " [Version 5.1." + OS.brand.build + "]\n", "t-cy");
+      case "whoami": return print("neptuneos\\" + (OS.setup && OS.setup.userName ? OS.setup.userName() : "Guest"), "t-out");
       case "color": return cmdColor(args);
       case "tree": return cmdTree(args);
       case "start": return cmdStart(args);
@@ -211,10 +211,11 @@
       case "beep": return cmdBeep();
       case "fullscreen": case "fs": return cmdFullscreen();
       case "emptybin": return cmdEmptyBin();
+      case "setup": return OS.setup && OS.setup.launch ? OS.setup.launch() : print("Setup is not available.\n", "t-err");
       case "exit": case "quit": case "bye": return win.close();
       case "shutdown": return OS.desktop.shutdown();
       case "restart": case "reboot": return OS.desktop.restart();
-      case "version": return print("neptuneOS 1.0 (build 1987, allegedly)\n", "t-cy");
+      case "version": return print(OS.brand.product + " Version 5.1." + OS.brand.build + "\n" + OS.brand.copyright + "\n", "t-cy");
       default: return print("'" + cmd + "' is not recognized as an internal or external command.\n", "t-err");
     }
   }
@@ -256,11 +257,12 @@
       "  date / time  Displays the current date / time\n" +
       "  ver          Shows the operating system version\n" +
       "  whoami       Shows who you are logged in as\n" +
-      "  calc / notepad / paint / explorer / settings / recycle / music\n" +
+      "  calc / notepad / paint / explorer / settings / recycle / music / snake / pacman\n" +
       "               Quick-launch programs\n" +
       "  play <file>  Plays an audio file in Media Player\n" +
       "  stop         Stops the music\n" +
-      "  beep         It boots. It beeps.\n" +
+      "  beep         Plays a system beep\n" +
+      "  setup        Runs the NeptuneOS setup wizard\n" +
       "  fullscreen   Toggle fullscreen mode\n" +
       "  emptybin     Empties the Recycle Bin\n" +
       "  shutdown / restart\n" +

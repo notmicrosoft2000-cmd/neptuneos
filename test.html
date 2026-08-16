@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/desktop.css">
   <link rel="stylesheet" href="css/windows.css">
   <link rel="stylesheet" href="css/apps.css">
+  <link rel="stylesheet" href="css/setup.css">
   <style>#results { position: fixed; top: 0; left: 0; z-index: 99999; background: #fff; color: #000; font: 12px monospace; padding: 8px; max-height: 80vh; overflow: auto; }</style>
 </head>
 <body>
@@ -50,7 +51,11 @@
   <script src="js/apps/settings.js"></script>
   <script src="js/apps/recyclebin.js"></script>
   <script src="js/apps/mediaplayer.js"></script>
+  <script src="js/apps/snake.js"></script>
+  <script src="js/apps/pacman.js"></script>
   <script src="js/main.js"></script>
+  <script>window.__skipSetup = true;</script>
+  <script src="js/setup.js"></script>
   <script>
     const results = [];
     const ok = (name, cond) => results.push((cond ? "PASS " : "FAIL ") + name + (cond ? "" : "  <-- check me"));
@@ -62,7 +67,7 @@
     };
 
     window.addEventListener("load", () => {
-      setTimeout(() => {
+      setTimeout(async () => {
         try {
           const OS = A();
           ok("OS global present", !!OS && !!OS.fs && !!OS.wm);
@@ -99,7 +104,7 @@
           ok("closed removed", !w.el.isConnected && !document.querySelector('.window-task[data-win-id="' + w.id + '"]'));
 
           /* apps launch */
-          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer"];
+          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer", "snake", "pacman"];
           apps.forEach((id) => {
             OS.apps[id].launch();
             const wc = OS.wm.windows[OS.wm.windows.length - 1];
@@ -128,10 +133,10 @@
           ok("terminal help works", term.textContent.includes("HELP command-name"));
           type("whoami");
           term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-          ok("terminal whoami", term.textContent.includes("neptuneos\\guest"));
+          ok("terminal whoami", term.textContent.toLowerCase().includes("neptuneos\\guest"));
           type("ver");
           term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-          ok("terminal version branded", term.textContent.includes("neptuneOS [Version 1.0]"));
+          ok("terminal version branded", term.textContent.includes("NeptuneOS [Version 5.1.2600]"));
           type("music");
           term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
           ok("terminal music opens player", !!OS.wm.windows.find((x) => x.app === "mediaplayer"));
@@ -159,8 +164,18 @@
           ok("media player playlist shows 5 tracks", mpWin.content.querySelectorAll(".player-track").length === 5);
           ok("media player single instance", OS.apps.mediaplayer.launch() === mpWin);
           ok("start menu has Media Player", document.getElementById("start-menu").textContent.includes("Media Player"));
+          ok("start menu has Games section", document.getElementById("start-menu").textContent.includes("Games"));
+          ok("start menu has Snake + Pacman", document.getElementById("start-menu").textContent.includes("Snake") && document.getElementById("start-menu").textContent.includes("Pacman"));
           ok("desktop has Media Player icon", document.getElementById("icon-layer").textContent.includes("Media Player"));
+          ok("desktop has Pacman icon", document.getElementById("icon-layer").textContent.includes("Pacman"));
           ok("shutdown screen hidden on boot", document.getElementById("shutdown-screen").hidden);
+
+          /* games render */
+          const snakeWin = OS.wm.windows.find((x) => x.app === "snake");
+          ok("snake canvas renders", !!snakeWin.content.querySelector("#snake-canvas") && snakeWin.content.querySelector("#snake-canvas").width === 384);
+          ok("snake score shows", snakeWin.content.textContent.includes("Score: 0"));
+          const pacWin = OS.wm.windows.find((x) => x.app === "pacman");
+          ok("pacman canvas renders", !!pacWin.content.querySelector("#pac-canvas") && pacWin.content.querySelector("#pac-canvas").width === 304);
 
           /* XP theme + fullscreen + touch mouse */
           ok("XP face palette applied", getComputedStyle(document.documentElement).getPropertyValue("--face").trim() === "#ece9d8");
@@ -210,6 +225,36 @@
           ok("dialog shows", !document.getElementById("dialog-layer").hidden && document.getElementById("dialog-layer").textContent.includes("hello dialog"));
           document.getElementById("dialog-layer").querySelector("button").click();
           ok("dialog closes", document.getElementById("dialog-layer").hidden);
+
+          /* setup wizard (OOBE) */
+          ok("setup API present", !!OS.setup && typeof OS.setup.launch === "function" && !OS.setup.done());
+          OS.setup.launch();
+          ok("setup wizard opens", !!document.getElementById("setup-overlay"));
+          ok("setup welcome step", document.getElementById("setup-overlay").textContent.includes("Welcome to NeptuneOS Setup"));
+          document.getElementById("setup-next").click();
+          ok("setup license step", document.getElementById("setup-overlay").textContent.includes("LICENSE AGREEMENT"));
+          document.querySelector('input[name="eula"][value="accept"]').checked = true;
+          document.getElementById("setup-next").click();
+          ok("setup personal step", !!document.getElementById("setup-name"));
+          document.getElementById("setup-name").value = "TestUser";
+          document.getElementById("setup-pass").value = "secret";
+          document.getElementById("setup-pass2").value = "secret";
+          document.getElementById("setup-next").click();
+          ok("setup datetime step", !!document.getElementById("setup-tz"));
+          document.getElementById("setup-cancel").click();
+          const yesBtn = Array.prototype.find.call(document.querySelectorAll("#dialog-layer button"), (b) => b.textContent.trim() === "Yes");
+          ok("setup cancel confirms", !!yesBtn);
+          if (yesBtn) yesBtn.click();
+          await new Promise((r) => setTimeout(r, 50));
+          ok("setup closes on cancel", !document.getElementById("setup-overlay"));
+          ok("setup saves user name", OS.setup.userName() === "TestUser");
+
+          /* logon screen */
+          OS.setup._showLogon();
+          ok("logon screen shows", !!document.getElementById("logon-screen"));
+          ok("logon shows user name", document.getElementById("logon-screen").textContent.includes("TestUser"));
+          const logonEl2 = document.getElementById("logon-screen");
+          if (logonEl2) logonEl2.remove();
         } catch (err) {
           results.push("EXCEPTION: " + err.message + "\n" + (err.stack || ""));
         }

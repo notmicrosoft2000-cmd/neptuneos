@@ -23,7 +23,8 @@
 
       win.content.innerHTML =
         '<div class="calc">' +
-        '  <div class="calc-display" id="calc-display">0</div>' +
+        '  <div class="calc-top"><div class="calc-display" id="calc-display">0</div>' +
+        '    <button class="calc-about" title="About Calculator" id="calc-about">?</button></div>' +
         '  <div class="calc-grid">' +
         '    <button class="btn" data-k="C">C</button>' +
         '    <button class="btn" data-k="CE">CE</button>' +
@@ -124,6 +125,8 @@
       win.content.querySelectorAll("[data-k]").forEach((b) => {
         b.addEventListener("click", () => press(b.dataset.k));
       });
+
+      win.content.querySelector("#calc-about").addEventListener("click", () => OS.about("Calculator", app.icon));
 
       win.content.addEventListener("keydown", (e) => {
         const map = { "Enter": "=", "*": "*", "/": "/", "+": "+", "-": "-", ".": "." };

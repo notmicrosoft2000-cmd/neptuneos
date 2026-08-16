@@ -281,6 +281,14 @@
   color: #fff;
 }
 .start-sep { border-top: 1px solid #aca899; margin: 3px 4px; }
+.start-section {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #6b6b6b;
+  padding: 5px 8px 2px;
+  font-weight: bold;
+}
 .start-footer {
   display: flex;
   align-items: center;
