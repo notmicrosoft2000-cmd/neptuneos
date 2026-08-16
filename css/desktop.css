@@ -1,0 +1,263 @@
+/* ===== Boot screen ===== */
+#boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#boot-screen.hidden { display: none; }
+.boot-inner { text-align: center; }
+.boot-logo { width: 72px; height: 72px; animation: boot-wiggle 1.6s ease-in-out infinite; }
+@keyframes boot-wiggle {
+  0%, 100% { transform: rotate(-8deg) translateX(-2px); }
+  50%      { transform: rotate(8deg)  translateX(2px); }
+}
+.boot-title { font-size: 30px; font-weight: bold; margin-top: 8px; letter-spacing: 1px; }
+.boot-title span { color: #1084d0; }
+.boot-sub { font-size: 12px; color: #bbb; margin-top: 4px; }
+.boot-bar {
+  width: 220px;
+  height: 14px;
+  margin: 18px auto 0;
+  border: 1px solid #fff;
+  padding: 1px;
+}
+.boot-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: repeating-linear-gradient(90deg, #1084d0 0 8px, #5ab8f0 8px 16px);
+  animation: boot-fill 3s ease-in-out forwards;
+}
+@keyframes boot-fill { to { width: 100%; } }
+
+/* ===== Shutdown screen ===== */
+#shutdown-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  gap: 24px;
+}
+.shutdown-text { font-size: 18px; color: #ddd; }
+
+/* ===== Desktop ===== */
+#desktop { position: fixed; inset: 0 0 32px 0; overflow: hidden; }
+#icon-layer { position: absolute; inset: 0; }
+#window-layer { position: absolute; inset: 0; pointer-events: none; }
+#window-layer > * { pointer-events: auto; }
+#selection-box {
+  position: absolute;
+  border: 1px dotted #fff;
+  background: rgba(0, 0, 128, 0.15);
+  display: none;
+  z-index: 900;
+}
+
+/* ===== Desktop icons ===== */
+.desktop-icon {
+  position: absolute;
+  width: 78px;
+  height: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 4px 2px;
+  cursor: default;
+  text-align: center;
+  z-index: 10;
+}
+.desktop-icon img { width: 38px; height: 38px; }
+.desktop-icon .label {
+  font-size: 11px;
+  color: #fff;
+  line-height: 1.15;
+  padding: 1px 3px;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.7), -1px -1px 0 rgba(0,0,0,0.7), 1px -1px 0 rgba(0,0,0,0.7), -1px 1px 0 rgba(0,0,0,0.7);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+.desktop-icon.selected .label { background: var(--highlight); text-shadow: none; }
+.desktop-icon:active img { filter: brightness(0.85); }
+
+/* ===== Context menu ===== */
+#context-menu {
+  position: absolute;
+  min-width: 170px;
+  z-index: 950;
+  background: var(--menu);
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+  padding: 2px;
+}
+#context-menu .menu-item {
+  padding: 4px 10px 4px 24px;
+  cursor: default;
+  font-size: 13px;
+  white-space: nowrap;
+}
+#context-menu .menu-item:hover { background: var(--highlight); color: #fff; }
+#context-menu .menu-sep { border-top: 1px solid var(--face-dark); margin: 3px 2px; }
+
+/* ===== Taskbar ===== */
+#taskbar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  background: linear-gradient(180deg, #d4d0c8 0%, #c0c0c0 8%, #b0aca4 45%, #c0c0c0 100%);
+  border-top: 2px solid var(--face-light);
+  z-index: 980;
+}
+.taskbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  background: var(--face);
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.taskbar-btn img { width: 16px; height: 16px; }
+.taskbar-btn:active, .taskbar-btn.pressed { border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker); }
+#start-btn { padding: 0 10px; margin-right: 2px; }
+#task-list { flex: 1; display: flex; gap: 4px; overflow: hidden; }
+.window-task {
+  flex: 0 1 160px;
+  min-width: 60px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--face);
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.window-task img { width: 15px; height: 15px; flex-shrink: 0; }
+.window-task span { overflow: hidden; text-overflow: ellipsis; }
+.window-task.active {
+  font-weight: bold;
+  border: 2px solid;
+  border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker);
+  background: repeating-conic-gradient(#c0c0c0 0% 25%, #ffffff 0% 50%) 50% / 2px 2px;
+}
+#tray {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px;
+  border: 2px solid;
+  border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker);
+  background: var(--face);
+}
+#clock { font-size: 12px; }
+
+/* ===== Start menu ===== */
+#start-menu {
+  position: fixed;
+  left: 2px;
+  bottom: 34px;
+  width: 400px;
+  z-index: 990;
+  display: flex;
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  background: var(--menu);
+}
+#start-menu[hidden] { display: none; }
+.start-left {
+  width: 100%;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.start-program {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  cursor: default;
+}
+.start-program img { width: 26px; height: 26px; }
+.start-program:hover { background: var(--highlight); color: #fff; }
+.start-sep { border-top: 1px solid var(--face-dark); margin: 3px 2px; }
+.start-right {
+  width: 34px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--title-blue) 0%, #001a55 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 8px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: #fff;
+  font-weight: bold;
+  letter-spacing: 3px;
+  font-size: 13px;
+  text-shadow: 1px 1px 0 #000;
+}
+.start-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--face-dark);
+  margin-top: 4px;
+  padding-top: 4px;
+}
+.start-footer .btn { min-width: 90px; }
+.start-user { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; }
+
+/* ===== Dialogs ===== */
+#dialog-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog {
+  min-width: 320px;
+  max-width: 480px;
+  background: var(--face);
+  padding: 14px;
+  box-shadow: 3px 3px 8px rgba(0,0,0,0.5);
+}
+.dialog-title { font-weight: bold; font-size: 14px; margin-bottom: 12px; }
+.dialog-body { margin-bottom: 14px; line-height: 1.5; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dialog input { width: 100%; }

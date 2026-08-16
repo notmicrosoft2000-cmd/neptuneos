@@ -1,0 +1,88 @@
+/* ===== neptuneOS theme: classic Windows 98 palette ===== */
+:root {
+  --face: #c0c0c0;
+  --face-light: #ffffff;
+  --face-dark: #808080;
+  --face-darker: #404040;
+  --title-blue: #000080;
+  --title-blue-hi: #1084d0;
+  --title-gray: #808080;
+  --desktop-teal: #008080;
+  --text: #000000;
+  --text-dim: #404040;
+  --accent: #000080;
+  --highlight: #000080;
+  --menu: #c0c0c0;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Tahoma", "Segoe UI", "MS Sans Serif", "Arial", sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+img { -webkit-user-drag: none; user-select: none; }
+
+/* ===== 3D borders ===== */
+.outset { border: 2px solid; border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light); }
+.inset  { border: 2px solid; border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker); }
+.raised { border: 1px solid; border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light); }
+.sunken { border: 1px solid; border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker); }
+
+/* ===== Buttons ===== */
+.btn {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 4px 14px;
+  background: var(--face);
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  outline: 1px solid var(--face-darker);
+  outline-offset: -3px;
+  cursor: pointer;
+  min-width: 72px;
+}
+.btn:active, .btn.pressed {
+  border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker);
+}
+.btn:focus { outline: 1px dotted var(--text-dim); }
+
+/* ===== Inputs ===== */
+input[type="text"], input[type="number"], select, textarea {
+  font-family: inherit;
+  font-size: 13px;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker);
+  outline: none;
+  padding: 3px 4px;
+}
+input:focus, select:focus { outline: 1px dotted var(--text-dim); }
+
+/* ===== Scrollbars ===== */
+::-webkit-scrollbar { width: 16px; height: 16px; }
+::-webkit-scrollbar-track { background: var(--face-dark); }
+::-webkit-scrollbar-thumb {
+  background: var(--face);
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+}
+::-webkit-scrollbar-button { display: none; }
+
+/* ===== Desktop (default wallpaper) ===== */
+#wallpaper {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 62%, #2f8f6f 0%, #1e6b52 35%, transparent 70%),
+    radial-gradient(ellipse 70% 40% at 50% 115%, #0f4a38 0%, transparent 60%),
+    linear-gradient(180deg, #7ab8e8 0%, #a8d4f0 45%, #bfe2a0 60%, #7fbf7f 100%);
+}

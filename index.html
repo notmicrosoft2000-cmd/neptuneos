@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="neptuneOS — a Neptune Productions product. A classic Windows-style desktop operating system shell that runs entirely in your browser. It boots. It beeps.">
+  <title>neptuneOS — a Neptune Productions product</title>
+  <link rel="icon" href="assets/icons/neptuneos.svg">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/desktop.css">
+  <link rel="stylesheet" href="css/windows.css">
+  <link rel="stylesheet" href="css/apps.css">
+</head>
+<body>
+  <!-- Boot screen -->
+  <div id="boot-screen">
+    <div class="boot-inner">
+      <img class="boot-logo" src="assets/icons/neptuneos.svg" alt="">
+      <div class="boot-title">neptune<span>OS</span></div>
+      <div class="boot-sub">A NEPTUNE PRODUCTIONS PRODUCT &middot; it boots. it beeps.</div>
+      <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Shutdown screen -->
+  <div id="shutdown-screen" hidden>
+    <div class="shutdown-inner">
+      <div class="shutdown-text">It's now safe to turn off your computer.</div>
+      <button class="btn" id="restart-btn">Restart</button>
+    </div>
+  </div>
+
+  <!-- Desktop -->
+  <div id="desktop">
+    <div id="wallpaper"></div>
+    <div id="icon-layer"></div>
+    <div id="selection-box"></div>
+    <div id="window-layer"></div>
+    <div id="context-menu" hidden></div>
+  </div>
+
+  <!-- Taskbar -->
+  <div id="taskbar">
+    <button id="start-btn" class="taskbar-btn" title="Start">
+      <img src="assets/icons/neptuneos.svg" alt="">
+      <span>Start</span>
+    </button>
+    <div id="task-list"></div>
+    <div id="tray">
+      <div id="clock">--:--</div>
+    </div>
+  </div>
+
+  <!-- Start menu -->
+  <div id="start-menu" hidden></div>
+
+  <!-- Modal dialogs -->
+  <div id="dialog-layer" hidden></div>
+
+  <script src="js/core/fs.js"></script>
+  <script src="js/core/wav.js"></script>
+  <script src="js/core/sfx.js"></script>
+  <script src="js/core/wm.js"></script>
+  <script src="js/core/taskbar.js"></script>
+  <script src="js/core/startmenu.js"></script>
+  <script src="js/core/desktop.js"></script>
+  <script src="js/apps/notepad.js"></script>
+  <script src="js/apps/terminal.js"></script>
+  <script src="js/apps/explorer.js"></script>
+  <script src="js/apps/paint.js"></script>
+  <script src="js/apps/calculator.js"></script>
+  <script src="js/apps/settings.js"></script>
+  <script src="js/apps/recyclebin.js"></script>
+  <script src="js/apps/mediaplayer.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

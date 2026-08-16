@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>neptuneOS test harness</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/desktop.css">
+  <link rel="stylesheet" href="css/windows.css">
+  <link rel="stylesheet" href="css/apps.css">
+  <style>#results { position: fixed; top: 0; left: 0; z-index: 99999; background: #fff; color: #000; font: 12px monospace; padding: 8px; max-height: 80vh; overflow: auto; }</style>
+</head>
+<body>
+  <div id="results"></div>
+  <div id="boot-screen"><div class="boot-inner"><div class="boot-bar"><div class="boot-bar-fill"></div></div></div></div>
+  <div id="shutdown-screen" hidden></div>
+  <div id="desktop">
+    <div id="wallpaper"></div>
+    <div id="icon-layer"></div>
+    <div id="selection-box"></div>
+    <div id="window-layer"></div>
+    <div id="context-menu" hidden></div>
+  </div>
+  <div id="taskbar">
+    <button id="start-btn"><img src="assets/icons/flag.svg"><span>Start</span></button>
+    <div id="task-list"></div>
+    <div id="tray"><div id="clock">--:--</div></div>
+  </div>
+  <div id="start-menu" hidden></div>
+  <div id="dialog-layer" hidden></div>
+
+  <script src="js/core/fs.js"></script>
+  <script src="js/core/wav.js"></script>
+  <script src="js/core/sfx.js"></script>
+  <script src="js/core/wm.js"></script>
+  <script src="js/core/taskbar.js"></script>
+  <script src="js/core/startmenu.js"></script>
+  <script src="js/core/desktop.js"></script>
+  <script src="js/apps/notepad.js"></script>
+  <script src="js/apps/terminal.js"></script>
+  <script src="js/apps/explorer.js"></script>
+  <script src="js/apps/paint.js"></script>
+  <script src="js/apps/calculator.js"></script>
+  <script src="js/apps/settings.js"></script>
+  <script src="js/apps/recyclebin.js"></script>
+  <script src="js/apps/mediaplayer.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    const results = [];
+    const ok = (name, cond) => results.push((cond ? "PASS " : "FAIL ") + name + (cond ? "" : "  <-- check me"));
+    const A = () => window.__retroos;
+
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        try {
+          const OS = A();
+          ok("OS global present", !!OS && !!OS.fs && !!OS.wm);
+
+          /* music seeded at boot */
+          const songs = ["pixel-dreams.wav", "dial-up-lullaby.wav", "the-startup-chime.wav", "floppy-disc-fandango.wav", "screensaver-sunset.wav"];
+          ok("all 5 songs seeded", songs.every((s) => OS.fs.exists("/C:/Users/Guest/Music/" + s)));
+          ok("song data is wav data-url", OS.fs.read("/C:/Users/Guest/Music/pixel-dreams.wav").startsWith("data:audio/wav;base64,"));
+          ok("wav generator produces data url", (OS.wav.dataUrl("the-startup-chime.wav") || "").startsWith("data:audio/wav;base64,"));
+          ok("wav seed idempotent", OS.wav.seed() === 0);
+
+          /* fs */
+          ok("default tree exists", OS.fs.exists("/C:/Users/Guest/Documents/readme.txt"));
+          ok("mkdir works", OS.fs.mkdir("/C:/Users/Guest/Documents/__testdir").ok);
+          ok("ls lists new dir", OS.fs.ls("/C:/Users/Guest/Documents").includes("__testdir"));
+          ok("write/read roundtrip", OS.fs.write("/C:/Users/Guest/Documents/__test.txt", "hello").ok && OS.fs.read("/C:/Users/Guest/Documents/__test.txt") === "hello");
+          ok("trash moves to bin", OS.fs.trash("/C:/Users/Guest/Documents/__test.txt").ok && OS.fs.exists("/C:/Recycle Bin/__test.txt") && !OS.fs.exists("/C:/Users/Guest/Documents/__test.txt"));
+          ok("rmdir empty dir", OS.fs.rm("/C:/Users/Guest/Documents/__testdir").ok && !OS.fs.exists("/C:/Users/Guest/Documents/__testdir"));
+
+          /* window manager */
+          const w = OS.wm.createWindow({ title: "TESTWIN", width: 400, height: 300 });
+          ok("window created", !!w.el && w.el.isConnected);
+          ok("window active", w === OS.wm.active);
+          ok("taskbar button", !!document.querySelector('.window-task[data-win-id="' + w.id + '"]'));
+          w.minimize();
+          ok("minimize hides", w.el.style.display === "none");
+          w.restore();
+          ok("restore shows", w.el.style.display !== "none");
+          w.maximize();
+          ok("maximized class", w.el.classList.contains("maximized"));
+          w.restore();
+          ok("restored size", !w.el.classList.contains("maximized"));
+          w.close();
+          ok("closed removed", !w.el.isConnected && !document.querySelector('.window-task[data-win-id="' + w.id + '"]'));
+
+          /* apps launch */
+          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer"];
+          apps.forEach((id) => {
+            OS.apps[id].launch();
+            const wc = OS.wm.windows[OS.wm.windows.length - 1];
+            ok("launch " + id + " opens window", wc && wc.el.isConnected && wc.title.length > 0);
+          });
+
+          /* terminal commands */
+          const termWin = OS.wm.windows.find((x) => x.app === "terminal");
+          const term = termWin.content.querySelector(".terminal");
+          const type = (s) => {
+            for (const ch of s) {
+              term.dispatchEvent(new KeyboardEvent("keydown", { key: ch, bubbles: true }));
+            }
+          };
+          type("dir");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          const outText = term.textContent;
+          ok("terminal dir lists Documents", outText.includes("Documents"));
+          type("cd Documents");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          type("dir");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          ok("terminal cd + dir lists readme", term.textContent.includes("readme.txt"));
+          type("help");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          ok("terminal help works", term.textContent.includes("HELP command-name"));
+          type("whoami");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          ok("terminal whoami", term.textContent.includes("neptuneos\\guest"));
+          type("ver");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          ok("terminal version branded", term.textContent.includes("neptuneOS [Version 1.0]"));
+          type("music");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          ok("terminal music opens player", !!OS.wm.windows.find((x) => x.app === "mediaplayer"));
+          type("beep");
+          term.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+          ok("terminal beep outputs", term.textContent.includes("BEEP"));
+
+          /* calculator logic via DOM */
+          const calcWin = OS.wm.windows.find((x) => x.app === "calculator");
+          const display = calcWin.content.querySelector("#calc-display");
+          const press = (k) => calcWin.content.querySelector('[data-k="' + k + '"]').click();
+          press("7"); press("+"); press("5"); press("=");
+          ok("calculator 7+5=12", display.textContent === "12");
+
+          /* paint canvas exists */
+          const paintWin = OS.wm.windows.find((x) => x.app === "paint");
+          ok("paint canvas 800x520", paintWin.content.querySelector("#paint-canvas") && paintWin.content.querySelector("#paint-canvas").width === 800);
+
+          /* recycle bin lists trashed item */
+          const recWin = OS.wm.windows.find((x) => x.app === "recycle");
+          ok("recycle bin lists __test.txt", recWin.content.querySelector(".recycle-list").textContent.includes("__test.txt"));
+
+          /* media player playlist */
+          const mpWin = OS.wm.windows.find((x) => x.app === "mediaplayer");
+          ok("media player playlist shows 5 tracks", mpWin.content.querySelectorAll(".player-track").length === 5);
+          ok("media player single instance", OS.apps.mediaplayer.launch() === mpWin);
+          ok("start menu has Media Player", document.getElementById("start-menu").textContent.includes("Media Player"));
+          ok("desktop has Media Player icon", document.getElementById("icon-layer").textContent.includes("Media Player"));
+
+          /* dialog */
+          OS.message("T", "hello dialog");
+          ok("dialog shows", !document.getElementById("dialog-layer").hidden && document.getElementById("dialog-layer").textContent.includes("hello dialog"));
+          document.getElementById("dialog-layer").querySelector("button").click();
+          ok("dialog closes", document.getElementById("dialog-layer").hidden);
+        } catch (err) {
+          results.push("EXCEPTION: " + err.message + "\n" + (err.stack || ""));
+        }
+        const el = document.getElementById("results");
+        el.innerHTML = "<b>" + results.filter((r) => r.startsWith("PASS")).length + " passed / " + results.filter((r) => r.startsWith("FAIL")).length + " failed</b><br>" + results.join("<br>");
+        document.title = "TITLEMARKER " + results.filter((r) => r.startsWith("FAIL")).length + " FAILURES";
+      }, 2500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+/* ===== Window frame ===== */
+.window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  min-height: 140px;
+  background: var(--face);
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  outline: 1px solid var(--face-darker);
+  outline-offset: -3px;
+  box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
+}
+
+/* Title bar */
+.window-titlebar {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 3px 0 4px;
+  background: linear-gradient(90deg, var(--title-blue) 0%, var(--title-blue-hi) 100%);
+  cursor: default;
+  flex-shrink: 0;
+}
+.window.active .window-titlebar {
+  background: linear-gradient(90deg, var(--title-blue) 0%, var(--title-blue-hi) 100%);
+}
+.window:not(.active) .window-titlebar {
+  background: linear-gradient(90deg, var(--title-gray) 0%, #a0a0a0 100%);
+}
+.window-title-icon { width: 15px; height: 15px; flex-shrink: 0; }
+.window-title { flex: 1; color: #fff; font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.window:not(.active) .window-title { color: #d8d8d8; }
+
+.title-btn {
+  width: 19px;
+  height: 17px;
+  padding: 0;
+  font-size: 11px;
+  font-family: "Tahoma", sans-serif;
+  font-weight: bold;
+  background: var(--face);
+  border: 2px solid;
+  border-color: var(--face-light) var(--face-darker) var(--face-darker) var(--face-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  color: #000;
+}
+.title-btn:active { border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker); }
+.title-btn.minimize { font-size: 13px; }
+.title-btn.maximize { font-size: 9px; }
+.title-btn.close { font-weight: bold; font-size: 11px; }
+
+/* Menu bar (optional, in content) */
+.app-menubar {
+  display: flex;
+  gap: 2px;
+  padding: 1px 2px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.app-menubar .menu-label { padding: 2px 6px; cursor: default; }
+.app-menubar .menu-label:hover, .app-menubar .menu-label.open { background: var(--highlight); color: #fff; }
+
+/* Window content */
+.window-content {
+  flex: 1;
+  position: relative;
+  margin: 3px;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--face-darker) var(--face-light) var(--face-light) var(--face-darker);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Status bar */
+.app-statusbar {
+  display: flex;
+  gap: 12px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  font-size: 11px;
+  background: var(--face);
+  border-top: 1px solid var(--face-dark);
+}
+
+/* Resize handles */
+.resize-handle { position: absolute; z-index: 30; }
+.resize-n  { top: -2px; left: 6px; right: 6px; height: 6px; cursor: n-resize; }
+.resize-s  { bottom: -2px; left: 6px; right: 6px; height: 6px; cursor: s-resize; }
+.resize-e  { right: -2px; top: 6px; bottom: 6px; width: 6px; cursor: e-resize; }
+.resize-w  { left: -2px; top: 6px; bottom: 6px; width: 6px; cursor: w-resize; }
+.resize-ne { top: -3px; right: -3px; width: 10px; height: 10px; cursor: ne-resize; }
+.resize-nw { top: -3px; left: -3px; width: 10px; height: 10px; cursor: nw-resize; }
+.resize-se { bottom: -3px; right: -3px; width: 10px; height: 10px; cursor: se-resize; }
+.resize-sw { bottom: -3px; left: -3px; width: 10px; height: 10px; cursor: sw-resize; }
+
+.window.maximized { box-shadow: none; }
+.window.maximized .resize-handle { display: none; }
+
+/* When dragging, disable text selection globally */
+body.dragging, body.resizing { cursor: default; }
