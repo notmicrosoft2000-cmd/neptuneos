@@ -53,6 +53,62 @@
         "radial-gradient(ellipse 55% 40% at 20% 85%, #16305e 0%, transparent 65%)," +
         "linear-gradient(180deg, #05081a 0%, #122d63 55%, #1d2b64 100%)",
     },
+    aurora: {
+      name: "Aurora",
+      css:
+        "radial-gradient(ellipse 80% 30% at 30% 20%, rgba(0,255,128,0.35) 0%, transparent 70%)," +
+        "radial-gradient(ellipse 60% 25% at 65% 35%, rgba(0,180,255,0.3) 0%, transparent 70%)," +
+        "radial-gradient(ellipse 70% 20% at 50% 15%, rgba(180,0,255,0.25) 0%, transparent 70%)," +
+        "linear-gradient(180deg, #020810 0%, #061428 40%, #0a2040 70%, #0c1830 100%)",
+    },
+    ocean: {
+      name: "Deep Ocean",
+      css:
+        "radial-gradient(ellipse 100% 50% at 50% 100%, rgba(0,40,80,0.6) 0%, transparent 60%)," +
+        "linear-gradient(180deg, #001428 0%, #002850 35%, #003868 55%, #004880 75%, #003060 100%)",
+    },
+    retro: {
+      name: "Retro CRT",
+      css:
+        "repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0 1px, transparent 1px 3px)," +
+        "radial-gradient(ellipse 80% 80% at 50% 50%, #1a3a1a 0%, #0a1a0a 100%)",
+    },
+    abstract: {
+      name: "Abstract",
+      css:
+        "conic-gradient(from 45deg at 30% 70%, #1a1a3e, #2a1a4e, #1a2a5e, #0a1a3e)," +
+        "linear-gradient(135deg, #1a0a2e 0%, #0a1a3e 50%, #1a2a1e 100%)",
+      blend: true,
+    },
+    vaporwave: {
+      name: "Vaporwave",
+      css:
+        "repeating-linear-gradient(90deg, rgba(255,0,128,0.12) 0 2px, transparent 2px 20px)," +
+        "linear-gradient(180deg, #0a0020 0%, #1a0040 30%, #ff0080 65%, #ff6090 80%, #ffb0c0 100%)",
+    },
+    starfield: {
+      name: "Starfield",
+      css:
+        "radial-gradient(1px 1px at 10% 15%, #fff 50%, transparent 51%)," +
+        "radial-gradient(1px 1px at 30% 45%, #fff 50%, transparent 51%)," +
+        "radial-gradient(1.5px 1.5px at 55% 10%, #ffd 50%, transparent 51%)," +
+        "radial-gradient(1px 1px at 70% 60%, #fff 50%, transparent 51%)," +
+        "radial-gradient(1px 1px at 85% 30%, #fff 50%, transparent 51%)," +
+        "radial-gradient(1.5px 1.5px at 20% 75%, #ffd 50%, transparent 51%)," +
+        "radial-gradient(1px 1px at 45% 85%, #fff 50%, transparent 51%)," +
+        "radial-gradient(1px 1px at 90% 80%, #fff 50%, transparent 51%)," +
+        "radial-gradient(1px 1px at 60% 50%, #dff 50%, transparent 51%)," +
+        "radial-gradient(1px 1px at 5% 55%, #fff 50%, transparent 51%)," +
+        "radial-gradient(circle 120px at 75% 25%, rgba(100,120,255,0.15) 0%, transparent 70%)," +
+        "linear-gradient(180deg, #020208 0%, #060610 50%, #0a0a18 100%)",
+    },
+    linen: {
+      name: "Linen",
+      css:
+        "repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 4px)," +
+        "repeating-linear-gradient(-45deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 4px)," +
+        "linear-gradient(180deg, #d8d0c0 0%, #ece4d4 50%, #d0c8b8 100%)",
+    },
   };
 
   const desktop = {

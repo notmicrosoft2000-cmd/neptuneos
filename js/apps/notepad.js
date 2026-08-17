@@ -75,6 +75,8 @@
       { label: "Save", action: () => { saveFile(); closeMenus(); } },
       { label: "Save As\u2026", action: () => { saveFileAs(); closeMenus(); } },
       { sep: true },
+      { label: "Download\u2026", action: () => { downloadFile(); closeMenus(); } },
+      { sep: true },
       { label: "Exit", action: () => { closeMenus(); win.close(); } },
     ]);
 
@@ -217,6 +219,22 @@
       dirty = false;
       setTitle();
       return true;
+    });
+  }
+
+  function downloadFile() {
+    const name = currentPath ? currentPath.split("/").pop() : "note.txt";
+    OS.prompt("Download", "Save as:", name).then((fname) => {
+      if (!fname) return;
+      const blob = new Blob([area.value], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     });
   }
 

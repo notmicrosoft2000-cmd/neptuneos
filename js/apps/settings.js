@@ -27,6 +27,7 @@
         '  <div class="settings-nav">' +
         '    <div class="nav-item sel" data-page="appearance">Appearance</div>' +
         '    <div class="nav-item" data-page="system">System</div>' +
+        '    <div class="nav-item" data-page="tablet">Tablet Edition</div>' +
         "  </div>" +
         '  <div class="settings-body"></div>' +
         "</div>";
@@ -37,6 +38,7 @@
       const showPage = (page) => {
         nav.forEach((n) => n.classList.toggle("sel", n.dataset.page === page));
         if (page === "appearance") renderAppearance();
+        else if (page === "tablet") renderTablet();
         else renderSystem();
       };
 
@@ -113,6 +115,38 @@
       }
 
       showPage("appearance");
+
+      function renderTablet() {
+        const isTablet = OS.tablet && OS.tablet.isEnabled();
+        body.innerHTML =
+          "<h3>NeptuneOS Tablet Edition</h3>" +
+          "<p>Tablet Edition transforms the desktop into a touch-friendly interface with:</p>" +
+          "<ul style='margin:8px 0 12px 16px;line-height:1.8;'>" +
+          "  <li>macOS-style floating dock with app icons</li>" +
+          "  <li>Larger touch targets for buttons and menus</li>" +
+          "  <li>Taskbar replaced by the dock</li>" +
+          "  <li>Bigger desktop icons and window controls</li>" +
+          "</ul>" +
+          '<label class="settings-check"><input type="checkbox" id="tablet-toggle"' +
+          (isTablet ? " checked" : "") +
+          "> Enable Tablet Edition</label>" +
+          '<div style="margin-top:12px;">' +
+          '<button class="btn" id="tablet-dock-toggle">' + (isTablet ? "Hide Dock" : "Show Dock") + "</button>" +
+          "</div>" +
+          '<p style="font-size:11px;color:var(--text-dim);margin-top:12px;">The dock can be shown independently of Tablet Edition mode.</p>';
+
+        body.querySelector("#tablet-toggle").addEventListener("change", (e) => {
+          if (OS.tablet) OS.tablet.setEnabled(e.target.checked);
+          const dockBtn = body.querySelector("#tablet-dock-toggle");
+          if (dockBtn) dockBtn.textContent = e.target.checked ? "Hide Dock" : "Show Dock";
+        });
+        body.querySelector("#tablet-dock-toggle").addEventListener("click", () => {
+          if (OS.dock) {
+            const isHidden = document.querySelector(".dock-wrap") && document.querySelector(".dock-wrap").classList.contains("hidden");
+            if (isHidden) OS.dock.show(); else OS.dock.hide();
+          }
+        });
+      }
     },
   };
 

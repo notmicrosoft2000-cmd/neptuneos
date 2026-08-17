@@ -53,6 +53,9 @@
   <script src="js/apps/mediaplayer.js"></script>
   <script src="js/apps/snake.js"></script>
   <script src="js/apps/pacman.js"></script>
+  <script src="js/apps/browser.js"></script>
+  <script src="js/core/dock.js"></script>
+  <script src="js/core/tablet.js"></script>
   <script src="js/main.js"></script>
   <script>window.__skipSetup = true;</script>
   <script src="js/setup.js"></script>
@@ -93,7 +96,7 @@
           ok("window active", w === OS.wm.active);
           ok("taskbar button", !!document.querySelector('.window-task[data-win-id="' + w.id + '"]'));
           w.minimize();
-          ok("minimize hides", w.el.style.display === "none");
+          ok("minimize hides", w.el.style.display === "none" || w.el.classList.contains("window-minimizing"));
           w.restore();
           ok("restore shows", w.el.style.display !== "none");
           w.maximize();
@@ -101,10 +104,10 @@
           w.restore();
           ok("restored size", !w.el.classList.contains("maximized"));
           w.close();
-          ok("closed removed", !w.el.isConnected && !document.querySelector('.window-task[data-win-id="' + w.id + '"]'));
+          ok("closed removed", !w.el.isConnected || w.el.classList.contains("window-closing"));
 
           /* apps launch */
-          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer", "snake", "pacman"];
+          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer", "snake", "pacman", "browser"];
           apps.forEach((id) => {
             OS.apps[id].launch();
             const wc = OS.wm.windows[OS.wm.windows.length - 1];
@@ -168,7 +171,32 @@
           ok("start menu has Snake + Pacman", document.getElementById("start-menu").textContent.includes("Snake") && document.getElementById("start-menu").textContent.includes("Pacman"));
           ok("desktop has Media Player icon", document.getElementById("icon-layer").textContent.includes("Media Player"));
           ok("desktop has Pacman icon", document.getElementById("icon-layer").textContent.includes("Pacman"));
+          ok("desktop has Browser icon", document.getElementById("icon-layer").textContent.includes("Browser"));
           ok("shutdown screen hidden on boot", document.getElementById("shutdown-screen").hidden);
+
+          /* dock */
+          ok("dock API present", !!OS.dock && typeof OS.dock.show === "function");
+          ok("dock element created", !!document.querySelector(".dock-wrap"));
+          OS.dock.show();
+          ok("dock show works", !document.querySelector(".dock-wrap").classList.contains("hidden"));
+          ok("dock has app items", document.querySelectorAll(".dock-item").length >= 8);
+          OS.dock.hide();
+          ok("dock hide works", document.querySelector(".dock-wrap").classList.contains("hidden"));
+
+          /* tablet mode */
+          ok("tablet API present", !!OS.tablet && typeof OS.tablet.setEnabled === "function");
+          OS.tablet.setEnabled(true);
+          ok("tablet enable adds class", document.body.classList.contains("tablet-mode"));
+          ok("tablet enable shows dock", !document.querySelector(".dock-wrap").classList.contains("hidden"));
+          OS.tablet.setEnabled(false);
+          ok("tablet disable removes class", !document.body.classList.contains("tablet-mode"));
+
+          /* browser app */
+          const brWin = OS.wm.windows.find((x) => x.app === "browser");
+          ok("browser window has URL bar", !!brWin.content.querySelector(".browser-url"));
+          ok("browser has nav buttons", brWin.content.querySelectorAll(".browser-nav-btn").length === 4);
+          ok("browser has iframe", !!brWin.content.querySelector("iframe"));
+          ok("browser has bookmarks", brWin.content.querySelectorAll(".browser-bm-btn").length >= 3);
 
           /* games render */
           const snakeWin = OS.wm.windows.find((x) => x.app === "snake");

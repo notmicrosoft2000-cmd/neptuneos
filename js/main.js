@@ -84,6 +84,12 @@
       icon: "assets/icons/pacman.svg",
       launch: () => OS.apps.pacman.launch(),
     });
+
+    d.addItem({
+      id: "browser", label: "Browser",
+      icon: "assets/icons/browser.svg",
+      launch: () => OS.apps.browser.launch(),
+    });
   }
 
   function boot() {
@@ -96,6 +102,13 @@
     OS.taskbar.init();
     OS.sfx.init();
     OS.fullscreen.init();
+    if (OS.dock) OS.dock.init();
+
+    /* Auto-show dock in tablet mode */
+    if (OS.tablet && OS.tablet.isEnabled()) {
+      document.body.classList.add("tablet-mode");
+      if (OS.dock) OS.dock.show();
+    }
 
     const bootScreen = document.getElementById("boot-screen");
     const bootFill = bootScreen.querySelector(".boot-bar-fill");

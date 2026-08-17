@@ -67,7 +67,16 @@
 
         minimize() {
           this.minimized = true;
-          this.el.style.display = "none";
+          this.el.classList.add("window-minimizing");
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
+            this.el.classList.remove("window-minimizing");
+            this.el.style.display = "none";
+          };
+          this.el.addEventListener("animationend", finish, { once: true });
+          setTimeout(finish, 300);
           if (wm.active === this) wm.active = null;
           OS.taskbar.updateButton(this);
         },
@@ -112,15 +121,23 @@
           if (this.app && OS.apps[this.app] && OS.apps[this.app].onWindowClose) {
             OS.apps[this.app].onWindowClose(this);
           }
-          el.remove();
-          const idx = wm.windows.indexOf(this);
-          if (idx !== -1) wm.windows.splice(idx, 1);
-          if (wm.active === this) {
-            wm.active = null;
-            const last = wm.windows[wm.windows.length - 1];
-            if (last) last.focus();
-          }
-          OS.taskbar.removeButton(this);
+          el.classList.add("window-closing");
+          let cleaned = false;
+          const cleanup = () => {
+            if (cleaned) return;
+            cleaned = true;
+            el.remove();
+            const idx = wm.windows.indexOf(win);
+            if (idx !== -1) wm.windows.splice(idx, 1);
+            if (wm.active === win) {
+              wm.active = null;
+              const last = wm.windows[wm.windows.length - 1];
+              if (last) last.focus();
+            }
+            OS.taskbar.removeButton(win);
+          };
+          el.addEventListener("animationend", cleanup, { once: true });
+          setTimeout(cleanup, 200);
         },
 
         detachContent() { return this.content; },
@@ -132,6 +149,12 @@
       wm.windows.push(win);
       OS.taskbar.addButton(win);
       this.focus(win);
+
+      el.classList.add("window-opening");
+      el.addEventListener("animationend", function onOpen() {
+        el.classList.remove("window-opening");
+        el.removeEventListener("animationend", onOpen);
+      });
 
       this.setupDrag(win, titlebar);
       if (o.resizable !== false) this.setupResize(win);
