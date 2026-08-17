@@ -69,13 +69,14 @@ input[type="range"]::-webkit-slider-thumb { cursor: var(--cursor), default; }
   border-radius: 3px;
   outline: none;
   box-shadow: 1px 1px 0 #fff inset, -1px -1px 0 #7b7b7b inset;
+  transition: background 0.12s, box-shadow 0.12s, border-color 0.12s;
 }
 .btn:hover { background: linear-gradient(180deg, #ffffff 0%, #f2eede 50%, #e0d8c8 51%, #dcd5c5 100%); }
 .btn:active, .btn.pressed {
   background: linear-gradient(180deg, #d5d0c8 0%, #e0d8c8 50%, #ecebe5 51%, #f5f3ed 100%);
   box-shadow: -1px -1px 0 #7b7b7b inset, 1px 1px 0 #fff inset;
 }
-.btn:focus { outline: 1px dotted var(--text-dim); outline-offset: -4px; }
+.btn:focus-visible { outline: 1px dotted #0054e3; outline-offset: -4px; }
 
 /* ===== Inputs ===== */
 input[type="text"], input[type="number"], select, textarea {
@@ -86,6 +87,7 @@ input[type="text"], input[type="number"], select, textarea {
   border-radius: 2px;
   outline: none;
   padding: 2px 4px;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
   border-color: #0054e3;
@@ -100,6 +102,7 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
   border: 1px solid #aca899;
   border-radius: 2px;
   box-shadow: 1px 1px 0 #fff inset;
+  transition: background 0.15s;
 }
 ::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #b8d4f5 0%, #d8ecff 100%); }
 ::-webkit-scrollbar-corner { background: #f0f0f0; }

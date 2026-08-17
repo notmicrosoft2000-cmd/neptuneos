@@ -61,9 +61,10 @@
   justify-content: center;
   line-height: 1;
   color: #fff;
+  transition: filter 0.12s, background 0.12s;
 }
-.title-btn:hover { filter: brightness(1.12); }
-.title-btn:active { filter: brightness(0.9); }
+.title-btn:hover { filter: brightness(1.15); }
+.title-btn:active { filter: brightness(0.88); }
 .title-btn.minimize,
 .title-btn.maximize {
   background: linear-gradient(180deg, #6a91d8 0%, #4a74c8 8%, #3a64b8 90%, #2a54a8 100%);
@@ -89,6 +90,10 @@
   font-size: 13px;
   color: #fff;
 }
+.title-btn.close:hover {
+  background: linear-gradient(180deg, #f0b8b8 0%, #d85050 8%, #c02020 90%, #a81010 100%);
+  filter: none;
+}
 
 /* Menu bar (optional, in content) */
 .app-menubar {
@@ -99,7 +104,7 @@
   font-size: 12px;
   background: var(--face);
 }
-.app-menubar .menu-label { padding: 2px 6px; cursor: default; border-radius: 3px; }
+.app-menubar .menu-label { padding: 2px 6px; cursor: default; border-radius: 3px; transition: background 0.1s, color 0.1s; }
 .app-menubar .menu-label:hover, .app-menubar .menu-label.open {
   background: linear-gradient(180deg, #3a8ae0 0%, #2a6fd8 60%, #1e62d0 100%);
   color: #fff;

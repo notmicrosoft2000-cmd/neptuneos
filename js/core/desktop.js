@@ -274,10 +274,12 @@
       });
 
       const rect = this.desktopRect();
-      const x = Math.min(e.clientX, rect.right - menu.offsetWidth - 4);
-      const y = Math.min(e.clientY, rect.bottom - menu.offsetHeight - 4);
-      menu.style.left = Math.max(rect.left, x) + "px";
-      menu.style.top = Math.max(rect.top, y) + "px";
+      let x = Math.min(e.clientX, rect.right - menu.offsetWidth - 4);
+      let y = Math.min(e.clientY, rect.bottom - menu.offsetHeight - 4);
+      x = Math.max(rect.left, x);
+      y = Math.max(rect.top, y);
+      menu.style.left = x + "px";
+      menu.style.top = y + "px";
       menu.hidden = false;
     },
 
