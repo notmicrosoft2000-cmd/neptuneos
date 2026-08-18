@@ -8,16 +8,10 @@
   const ACCENTS = ["#000080", "#800000", "#008000", "#800080", "#008080", "#000000", "#4444aa"];
 
   const BLOATWARE_APPS = [
-    { name: "Microslop Teams", size: "247 MB", desc: "Stay connected with your team" },
-    { name: "OneDrive (Not Enough Space)", size: "89 MB", desc: "Cloud storage that's always full" },
-    { name: "Bing Bar", size: "12 MB", desc: "Search the web slower" },
-    { name: "Microslop Copilot", size: "156 MB", desc: "AI that summarizes error messages" },
-    { name: "Candy Crush Saga", size: "312 MB", desc: "Pre-installed for your productivity" },
-    { name: "Microslop Edge (Again)", size: "198 MB", desc: "Your default browser for your default browser" },
-    { name: "LinkedIn Desktop", size: "67 MB", desc: "Professional networking" },
-    { name: "3D Viewer", size: "44 MB", desc: "View 3D models you'll never create" },
-    { name: "Microslop Solitaire Collection Premium Gold Edition XL", size: "523 MB", desc: "Pay $9.99/month for card backs" },
-    { name: "News Bar", size: "34 MB", desc: "Breaking: Your computer is fine" },
+    { name: "Neptune Notes", size: "6 KB", desc: "Quick note-taking app" },
+    { name: "Neptune Weather", size: "4 KB", desc: "Local weather (permanently 72°F)" },
+    { name: "Neptune Maps", size: "8 KB", desc: "Turn-by-turn directions to nowhere" },
+    { name: "Neptune Calculator Pro", size: "12 KB", desc: "It adds. That's it." },
   ];
 
   const app = {
@@ -44,7 +38,7 @@
         '    <div class="nav-item" data-page="network">Network</div>' +
         '    <div class="nav-item" data-page="addremove">Add/Remove Programs</div>' +
         '    <div class="nav-item" data-page="tablet">Tablet Edition</div>' +
-        '    <div class="nav-item" data-page="bloat">Bloatware</div>' +
+        '    <div class="nav-item" data-page="bloat">Bundled Apps</div>' +
         '    <div class="nav-item" data-page="system">System</div>' +
         "  </div>" +
         '  <div class="settings-body"></div>' +
@@ -191,7 +185,7 @@
 
       function renderNetwork() {
         const hostname = localStorage.getItem("neptuneos.network.hostname") || "NEPTUNE-1";
-        const workgroup = localStorage.getItem("neptuneos.network.workgroup") || "MICROSLOP";
+        const workgroup = localStorage.getItem("neptuneos.network.workgroup") || "NEPTUNE";
         body.innerHTML =
           "<h3>Network Connections</h3>" +
           '<div class="settings-group">' +
@@ -226,19 +220,21 @@
           '<div class="settings-prog-list" id="prog-list">';
         const coreApps = [
           { name: "NeptuneOS", size: "∞", desc: "Your operating system (you can't remove this)" },
-          { name: "MS-DOS Prompt", size: "42 KB", desc: "Command line interface" },
+          { name: "Terminal", size: "42 KB", desc: "Command line interface" },
           { name: "Notepad", size: "18 KB", desc: "Text editor" },
           { name: "Calculator", size: "24 KB", desc: "Arithmetic device" },
           { name: "Paint", size: "56 KB", desc: "Drawing program" },
           { name: "Media Player", size: "34 KB", desc: "Music and visualization" },
           { name: "File Explorer", size: "78 KB", desc: "Browse the virtual file system" },
-          { name: "Browser", size: "12 KB", desc: "Web browser with limited iframe support" },
+          { name: "Browser", size: "12 KB", desc: "Web browser with CORS proxy" },
           { name: "Snake", size: "8 KB", desc: "Classic snake game" },
           { name: "Pacman", size: "11 KB", desc: "Pac-Man clone" },
           { name: "Solitaire", size: "14 KB", desc: "Klondike solitaire" },
           { name: "Minesweeper", size: "9 KB", desc: "Classic minesweeper" },
           { name: "Sticky Notes", size: "6 KB", desc: "Desktop sticky notes" },
           { name: "Clock", size: "5 KB", desc: "Analog and digital clock" },
+          { name: "Task Manager", size: "16 KB", desc: "System monitor and process manager" },
+          { name: "Neptune Store", size: "22 KB", desc: "Download additional applications" },
         ];
         coreApps.forEach((a) => {
           html += '<div class="settings-prog">' +
@@ -283,17 +279,16 @@
       }
 
       function renderBloat() {
-        let html = "<h3>Microslop Bloatware Manager</h3>" +
-          '<p style="color:var(--text-dim);margin-bottom:12px;">These programs were pre-installed without your consent. You\'re welcome.</p>' +
+        let html = "<h3>NeptuneOS Bundled Apps</h3>" +
+          '<p style="color:var(--text-dim);margin-bottom:12px;">These applications are included with NeptuneOS.</p>' +
           '<div class="settings-prog-list">';
         BLOATWARE_APPS.forEach((a) => {
           html += '<div class="settings-prog">' +
             '<div class="settings-prog-info"><b>' + OS.esc(a.name) + '</b> <span style="color:var(--text-dim);font-size:11px;">(' + a.size + ')</span>' +
             '<div style="font-size:11px;color:var(--text-dim);">' + OS.esc(a.desc) + '</div></div>' +
-            '<button class="btn btn-small" disabled title="Just kidding! You can never remove these.">Remove</button></div>';
+            '<button class="btn btn-small" disabled>System component</button></div>';
         });
-        html += "</div>" +
-          '<p style="font-size:11px;color:#c00;margin-top:12px;">⚠ None of these can actually be removed. This is a Microslop product. We own your computer now.</p>';
+        html += "</div>";
         body.innerHTML = html;
       }
 
@@ -361,10 +356,10 @@
           if (OS.neptunai) {
             if (OS.neptunai.isEnabled()) {
               OS.neptunai.disable();
-              OS.message("Control Panel", "NeptunAI has been disabled. It's crying now.", "info");
+              OS.message("Control Panel", "NeptunAI has been disabled.", "info");
             } else {
               OS.neptunai.enable();
-              OS.message("Control Panel", "NeptunAI has been re-enabled! 🎉", "info");
+              OS.message("Control Panel", "NeptunAI has been re-enabled.", "info");
             }
           }
         });

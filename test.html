@@ -58,10 +58,13 @@
   <script src="js/apps/minesweeper.js"></script>
   <script src="js/apps/stickynotes.js"></script>
   <script src="js/apps/clock.js"></script>
+  <script src="js/apps/taskmanager.js"></script>
+  <script src="js/apps/store.js"></script>
   <script src="js/core/dock.js"></script>
   <script src="js/core/tablet.js"></script>
   <script src="js/core/neptunai.js"></script>
   <script src="js/core/bloat.js"></script>
+  <script src="js/core/hardware.js"></script>
   <script src="js/main.js"></script>
   <script>window.__skipSetup = true;</script>
   <script src="js/setup.js"></script>
@@ -113,7 +116,7 @@
           ok("closed removed", !w.el.isConnected || w.el.classList.contains("window-closing"));
 
           /* apps launch */
-          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer", "snake", "pacman", "browser", "minesweeper", "stickynotes", "clock"];
+          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer", "snake", "pacman", "browser", "minesweeper", "stickynotes", "clock", "taskmanager", "store"];
           apps.forEach((id) => {
             OS.apps[id].launch();
             const wc = OS.wm.windows[OS.wm.windows.length - 1];
@@ -242,7 +245,7 @@
           ok("control panel has Sound page", cpWin.content.textContent.includes("Sound"));
           ok("control panel has Network page", cpWin.content.textContent.includes("Network"));
           ok("control panel has Add/Remove", cpWin.content.textContent.includes("Add/Remove"));
-          ok("control panel has Bloatware", cpWin.content.textContent.includes("Bloatware"));
+          ok("control panel has Bundled Apps", cpWin.content.textContent.includes("Bundled Apps"));
 
           /* bloatware */
           ok("bloat API present", !!OS.bloat && typeof OS.bloat.init === "function");
@@ -250,6 +253,26 @@
 
           /* neptunai */
           ok("neptunai API present", !!OS.neptunai && typeof OS.neptunai.init === "function");
+
+          /* hardware simulation */
+          ok("hardware API present", !!OS.hardware && typeof OS.hardware.getCPU === "function");
+          ok("hardware CPU is number", typeof OS.hardware.getCPU() === "number");
+          ok("hardware RAM is number", typeof OS.hardware.getRAM() === "number");
+          ok("hardware GPU is number", typeof OS.hardware.getGPU() === "number");
+          ok("hardware total RAM is 640KB", OS.hardware.getTotalRAM() === "640 KB");
+          ok("hardware CPU history", Array.isArray(OS.hardware.getCPUHistory()) && OS.hardware.getCPUHistory().length > 0);
+
+          /* task manager */
+          const tmWin = OS.wm.windows.find((x) => x.app === "taskmanager");
+          ok("task manager has process table", !!tmWin.content.querySelector("#tm-processes") || !!tmWin.content.querySelector("table") || tmWin.content.textContent.includes("Task Manager"));
+
+          /* store */
+          const stWin = OS.wm.windows.find((x) => x.app === "store");
+          ok("store has app cards", stWin.content.textContent.includes("Neptune Store"));
+
+          /* desktop has new icons */
+          ok("desktop has Task Manager icon", document.getElementById("icon-layer").textContent.includes("Task Manager"));
+          ok("desktop has Neptune Store icon", document.getElementById("icon-layer").textContent.includes("Neptune Store"));
 
           /* XP theme + fullscreen + touch mouse */
           ok("XP face palette applied", getComputedStyle(document.documentElement).getPropertyValue("--face").trim() === "#ece9d8");

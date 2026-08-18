@@ -114,6 +114,18 @@
       icon: "assets/icons/clock.svg",
       launch: () => OS.apps.clock.launch(),
     });
+
+    d.addItem({
+      id: "taskmanager", label: "Task Manager",
+      icon: "assets/icons/taskmanager.svg",
+      launch: () => OS.apps.taskmanager.launch(),
+    });
+
+    d.addItem({
+      id: "store", label: "Neptune Store",
+      icon: "assets/icons/store.svg",
+      launch: () => OS.apps.store.launch(),
+    });
   }
 
   function boot() {
@@ -127,6 +139,7 @@
     OS.sfx.init();
     OS.fullscreen.init();
     if (OS.dock) OS.dock.init();
+    if (OS.hardware) OS.hardware.init();
     if (OS.neptunai) OS.neptunai.init();
     if (OS.bloat) OS.bloat.init();
 

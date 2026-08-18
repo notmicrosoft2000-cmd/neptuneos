@@ -1,12 +1,14 @@
 /* =========================================================
  * neptuneOS — Web Browser
- * iframe-based browser with New Tab page, URL bar, search,
- * navigation, bookmarks, and iframe-block detection.
+ * CORS-proxied browser with New Tab page, URL bar, search,
+ * navigation, bookmarks, and srcdoc-based rendering.
  * ========================================================= */
 (function () {
   "use strict";
 
-  const BOOKMARKS = [
+  var PROXY = "https://api.allorigins.win/raw?url=";
+
+  var BOOKMARKS = [
     { label: "Home", url: "__home__" },
     { label: "Wikipedia", url: "https://en.wikipedia.org" },
     { label: "GitHub", url: "https://github.com" },
@@ -14,7 +16,7 @@
     { label: "NeptuneOS", url: "https://github.com/notmicrosoft2000-cmd/neptuneos" },
   ];
 
-  const QUICK_LINKS = [
+  var QUICK_LINKS = [
     { label: "Wikipedia", desc: "Free encyclopedia", url: "https://en.wikipedia.org", icon: "https://en.wikipedia.org/static/favicon/wikipedia.ico" },
     { label: "GitHub", desc: "Code hosting", url: "https://github.com", icon: "https://github.githubassets.com/favicons/favicon.svg" },
     { label: "MDN", desc: "Web development docs", url: "https://developer.mozilla.org", icon: "https://developer.mozilla.org/favicon-48x48.png" },
@@ -22,21 +24,23 @@
     { label: "NeptuneOS", desc: "NeptuneOS repository", url: "https://github.com/notmicrosoft2000-cmd/neptuneos" },
   ];
 
-  let win = null;
-  let iframe = null;
-  let urlInput = null;
-  let blank = null;
-  let errorOverlay = null;
-  let statusEl = null;
-  let posEl = null;
-  let historyStack = [];
-  let historyIdx = -1;
-  let loadTimer = null;
-  let isHome = true;
-  let loading = false;
+  var win = null;
+  var iframe = null;
+  var urlInput = null;
+  var blank = null;
+  var errorOverlay = null;
+  var errorDesc = null;
+  var statusEl = null;
+  var posEl = null;
+  var historyStack = [];
+  var historyIdx = -1;
+  var isHome = true;
+  var loading = false;
+  var currentUrl = "";
+  var blobUrls = [];
 
   function buildNewTabHTML() {
-    const linksHtml = QUICK_LINKS.map(function (l) {
+    var linksHtml = QUICK_LINKS.map(function (l) {
       var iconHtml = l.icon
         ? '<img src="' + OS.esc(l.icon) + '" onerror="this.style.display=\'none\'">'
         : "";
@@ -72,8 +76,7 @@
       '<div class="search"><input type="text" id="q" placeholder="Search DuckDuckGo or enter URL...">' +
       '<button id="goBtn">Go</button></div>' +
       '<div class="links">' + linksHtml + "</div>" +
-      '<div class="note">Tip: Use the search bar above to search DuckDuckGo or enter a URL.<br>' +
-      "Some websites block being loaded inside iframes for security reasons.</div>" +
+      '<div class="note">Tip: Use the search bar above to search DuckDuckGo or enter a URL.</div>' +
       "<script>" +
       'var q=document.getElementById("q");' +
       'document.getElementById("goBtn").onclick=function(){nav();};' +
@@ -89,9 +92,86 @@
     );
   }
 
-  const NEW_TAB_HTML = buildNewTabHTML();
+  var NEW_TAB_HTML = buildNewTabHTML();
 
-  const app = {
+  function buildErrorHTML(title, desc) {
+    return (
+      '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      "<style>" +
+      "*{margin:0;padding:0;box-sizing:border-box;}" +
+      "body{font-family:Tahoma,sans-serif;background:#f4f4f4;color:#333;display:flex;align-items:center;justify-content:center;min-height:100vh;}" +
+      ".err{max-width:420px;text-align:center;padding:32px;}" +
+      ".err .icon{font-size:48px;margin-bottom:12px;}" +
+      ".err h2{font-size:18px;color:#c0392b;margin-bottom:8px;}" +
+      ".err p{font-size:13px;color:#666;line-height:1.5;}" +
+      "</style></head><body>" +
+      '<div class="err">' +
+      '<div class="icon">&#9888;</div>' +
+      "<h2>" + OS.esc(title) + "</h2>" +
+      "<p>" + OS.esc(desc) + "</p>" +
+      "</div></body></html>"
+    );
+  }
+
+  function buildLoadingHTML(domain) {
+    return (
+      '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+      "<style>" +
+      "*{margin:0;padding:0;box-sizing:border-box;}" +
+      "body{font-family:Tahoma,sans-serif;background:#f4f4f4;color:#555;display:flex;align-items:center;justify-content:center;min-height:100vh;}" +
+      ".ld{text-align:center;}" +
+      ".ld .spinner{width:32px;height:32px;border:3px solid #ddd;border-top-color:#245edc;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}" +
+      "@keyframes spin{to{transform:rotate(360deg);}}" +
+      ".ld p{font-size:13px;}" +
+      "</style></head><body>" +
+      '<div class="ld"><div class="spinner"></div>' +
+      "<p>Loading " + OS.esc(domain) + "...</p></div>" +
+      "</body></html>"
+    );
+  }
+
+  function isLikelyURL(str) {
+    if (/^https?:\/\//i.test(str)) return true;
+    if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(str)) return true;
+    if (/^localhost(:\d+)?(\/.*)?$/.test(str)) return true;
+    return false;
+  }
+
+  function cleanBlobUrls() {
+    for (var i = 0; i < blobUrls.length; i++) {
+      try { URL.revokeObjectURL(blobUrls[i]); } catch (e) {}
+    }
+    blobUrls = [];
+  }
+
+  function makeBlobUrl(html) {
+    var blob = new Blob([html], { type: "text/html" });
+    var url = URL.createObjectURL(blob);
+    blobUrls.push(url);
+    return url;
+  }
+
+  function getDomain(url) {
+    try {
+      return url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0].split("?")[0];
+    } catch (e) {
+      return url;
+    }
+  }
+
+  function fixRelativeUrls(html, baseUrl) {
+    var baseTag = '<base href="' + OS.esc(baseUrl) + '">';
+    if (/<head[\s>]/i.test(html)) {
+      html = html.replace(/(<head[\s>])/i, "$1" + baseTag);
+    } else if (/<html[\s>]/i.test(html)) {
+      html = html.replace(/(<html[\s>])/i, "$1<head>" + baseTag + "</head>");
+    } else {
+      html = "<head>" + baseTag + "</head>" + html;
+    }
+    return html;
+  }
+
+  var app = {
     id: "browser",
     name: "Browser",
     icon: "assets/icons/browser.svg",
@@ -121,6 +201,7 @@
           win = null;
           iframe = null;
           window.removeEventListener("message", onFrameMessage);
+          cleanBlobUrls();
         },
       });
 
@@ -141,9 +222,9 @@
         '  <div class="browser-blank" id="browser-blank"></div>' +
         '  <div class="browser-error" id="browser-error" style="display:none;">' +
         '    <div class="browser-error-inner">' +
-        '      <div class="browser-error-icon">&#128279;</div>' +
-        '      <div class="browser-error-title">This site can\'t be loaded in NeptuneOS Browser</div>' +
-        '      <div class="browser-error-desc">This website blocks iframe embedding via X-Frame-Options or Content-Security-Policy headers.<br>This is a security restriction set by the website, not a bug in the browser.</div>' +
+        '      <div class="browser-error-icon">&#9888;</div>' +
+        '      <div class="browser-error-title" id="browser-error-title">Failed to load page</div>' +
+        '      <div class="browser-error-desc" id="browser-error-desc">The page could not be fetched.</div>' +
         '      <button class="btn browser-error-btn" id="browser-open-real">Open in Real Browser &rarr;</button>' +
         '      <button class="btn browser-error-back" id="browser-error-back">&larr; Go Back</button>' +
         '    </div>' +
@@ -155,10 +236,10 @@
       urlInput = win.content.querySelector("#browser-url");
       blank = win.content.querySelector("#browser-blank");
       errorOverlay = win.content.querySelector("#browser-error");
+      errorDesc = win.content.querySelector("#browser-error-desc");
       statusEl = win.content.querySelector("#browser-status");
       posEl = win.content.querySelector("#browser-pos");
 
-      /* Bookmarks bar */
       var bmBar = win.content.querySelector("#browser-bookmarks");
       BOOKMARKS.forEach(function (bm) {
         var btn = document.createElement("button");
@@ -174,7 +255,6 @@
         bmBar.appendChild(btn);
       });
 
-      /* Toolbar button handlers */
       win.content.querySelectorAll("[data-nav]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var action = btn.dataset.nav;
@@ -188,21 +268,14 @@
         });
       });
 
-      /* URL bar enter */
       urlInput.addEventListener("keydown", function (e) {
         if (e.key === "Enter") navigateFromBar();
       });
 
-      /* Error overlay buttons */
       win.content.querySelector("#browser-open-real").addEventListener("click", openExternal);
       win.content.querySelector("#browser-error-back").addEventListener("click", goBack);
 
-      /* Listen for messages from New Tab page iframe */
       window.addEventListener("message", onFrameMessage);
-
-      /* Track iframe load for error detection */
-      iframe.addEventListener("load", onIframeLoad);
-      iframe.addEventListener("error", onIframeError);
 
       if (startUrl) {
         navigate(startUrl);
@@ -224,12 +297,14 @@
       function loadNewTab() {
         isHome = true;
         loading = false;
+        currentUrl = "";
+        cleanBlobUrls();
         blank.style.display = "flex";
         errorOverlay.style.display = "none";
         iframe.style.display = "none";
+        iframe.removeAttribute("srcdoc");
         iframe.src = "about:blank";
-        var blob = new Blob([NEW_TAB_HTML], { type: "text/html" });
-        var blobUrl = URL.createObjectURL(blob);
+        var blobUrl = makeBlobUrl(NEW_TAB_HTML);
         blank.innerHTML = "";
         var frame = document.createElement("iframe");
         frame.style.cssText = "width:100%;height:100%;border:none;";
@@ -251,7 +326,7 @@
           return;
         }
         if (!/^https?:\/\//i.test(raw)) {
-          if (/^[\w-]+(\.[\w-]+)+/.test(raw)) {
+          if (isLikelyURL(raw)) {
             raw = "https://" + raw;
           } else {
             raw = "https://duckduckgo.com/?q=" + encodeURIComponent(raw);
@@ -265,70 +340,94 @@
         if (!/^https?:\/\//i.test(url)) url = "https://" + url;
         isHome = false;
         loading = true;
-        statusEl.textContent = "Loading...";
+        currentUrl = url;
         urlInput.value = url;
         blank.style.display = "none";
         errorOverlay.style.display = "none";
         iframe.style.display = "block";
-        iframe.src = url;
 
-        var domain = url.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
+        var domain = getDomain(url);
         win.setTitle(OS.esc(domain) + " \u2014 Browser");
+        statusEl.textContent = "Loading " + domain + "...";
+
+        var loadingBlob = makeBlobUrl(buildLoadingHTML(domain));
+        iframe.src = "about:blank";
+        iframe.srcdoc = "";
+        var frame = blank.querySelector("iframe");
+        if (frame) {
+          blank.style.display = "flex";
+          blank.innerHTML = "";
+          var lf = document.createElement("iframe");
+          lf.style.cssText = "width:100%;height:100%;border:none;";
+          lf.setAttribute("sandbox", "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox");
+          lf.src = loadingBlob;
+          blank.appendChild(lf);
+        }
 
         pushHistory(url);
-
-        clearTimeout(loadTimer);
-        loadTimer = setTimeout(detectBlocked, 4000);
         updateButtons();
+        fetchViaProxy(url);
       }
 
-      function onIframeLoad() {
-        if (isHome) return;
-        clearTimeout(loadTimer);
+      function fetchViaProxy(url) {
+        var proxied = PROXY + encodeURIComponent(url);
 
-        /* If the iframe navigated to about:blank, the site blocked embedding */
-        try {
-          var loc = iframe.contentWindow.location.href;
-          if (loc === "about:blank" || loc === "about:srcdoc") {
-            showError();
-            return;
-          }
-          urlInput.value = loc;
-        } catch (e) {
-          /* Cross-origin — page likely loaded fine */
-        }
+        fetch(proxied)
+          .then(function (resp) {
+            if (!resp.ok) {
+              throw new Error("HTTP " + resp.status + " " + resp.statusText);
+            }
+            return resp.text();
+          })
+          .then(function (html) {
+            if (currentUrl !== url) return;
 
-        loading = false;
-        statusEl.textContent = "Done";
-        updateButtons();
-      }
+            var fixed = fixRelativeUrls(html, url);
+            var domain = getDomain(url);
 
-      function onIframeError() {
-        if (isHome) return;
-        clearTimeout(loadTimer);
-        showError();
-      }
+            iframe.src = "about:blank";
+            blank.style.display = "none";
+            errorOverlay.style.display = "none";
+            iframe.style.display = "block";
+            iframe.srcdoc = fixed;
 
-      function detectBlocked() {
-        if (isHome || !loading) return;
-        try {
-          var doc = iframe.contentDocument || iframe.contentWindow.document;
-          if (!doc || !doc.body || doc.body.innerHTML.length < 10) {
-            showError();
-            return;
-          }
-        } catch (e) {
-          /* Cross-origin — assume loaded OK */
-        }
-        loading = false;
-        statusEl.textContent = "Done";
-      }
+            urlInput.value = url;
+            win.setTitle(OS.esc(domain) + " \u2014 Browser");
+            statusEl.textContent = "Done";
+            loading = false;
+            updateButtons();
+          })
+          .catch(function (err) {
+            if (currentUrl !== url) return;
 
-      function showError() {
-        loading = false;
-        errorOverlay.style.display = "flex";
-        iframe.style.display = "none";
-        statusEl.textContent = "Blocked";
+            var domain = getDomain(url);
+            var msg = err.message || "Could not fetch the page.";
+            var errHtml = buildErrorHTML(
+              "Failed to load " + domain,
+              "The page could not be loaded through the proxy. " + msg
+            );
+            var errBlob = makeBlobUrl(errHtml);
+
+            iframe.src = "about:blank";
+            blank.style.display = "none";
+            errorOverlay.style.display = "none";
+            iframe.style.display = "block";
+            iframe.srcdoc = "";
+
+            iframe.onload = function () {
+              iframe.onload = null;
+              fetch(errBlob).then(function (r) { return r.text(); }).then(function (h) {
+                iframe.srcdoc = h;
+              });
+            };
+            iframe.srcdoc = errHtml;
+
+            urlInput.value = url;
+            win.setTitle(OS.esc(domain) + " \u2014 Browser");
+            statusEl.textContent = "Error";
+            loading = false;
+            updateButtons();
+          });
       }
 
       function openExternal() {
@@ -365,14 +464,11 @@
           loadNewTab();
           return;
         }
-        if (iframe.src && iframe.src !== "about:blank") {
+        if (currentUrl) {
           statusEl.textContent = "Refreshing...";
-          errorOverlay.style.display = "none";
-          iframe.style.display = "block";
           loading = true;
-          iframe.src = iframe.src;
-          clearTimeout(loadTimer);
-          loadTimer = setTimeout(detectBlocked, 4000);
+          updateButtons();
+          fetchViaProxy(currentUrl);
         }
       }
 

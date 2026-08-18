@@ -385,11 +385,17 @@
 
     /* ---------- power ---------- */
     shutdown() {
-      OS.confirm("Shut Down Windows", "Are you sure you want to shut down your computer?").then((ok) => {
+      OS.confirm("Shut Down", "Are you sure you want to shut down NeptuneOS?").then((ok) => {
         if (!ok) return;
+        /* close all windows */
+        const wins = OS.wm.windows.slice();
+        wins.forEach((w) => { try { w.close(); } catch (e) {} });
         document.getElementById("desktop").style.display = "none";
         document.getElementById("taskbar").style.display = "none";
-        document.getElementById("shutdown-screen").hidden = false;
+        document.getElementById("start-menu").hidden = true;
+        const sd = document.getElementById("shutdown-screen");
+        sd.hidden = false;
+        sd.style.animation = "shutdown-fadein 1.5s ease-out";
       });
     },
 
