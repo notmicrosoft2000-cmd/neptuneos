@@ -54,8 +54,14 @@
   <script src="js/apps/snake.js"></script>
   <script src="js/apps/pacman.js"></script>
   <script src="js/apps/browser.js"></script>
+  <script src="js/apps/solitaire.js"></script>
+  <script src="js/apps/minesweeper.js"></script>
+  <script src="js/apps/stickynotes.js"></script>
+  <script src="js/apps/clock.js"></script>
   <script src="js/core/dock.js"></script>
   <script src="js/core/tablet.js"></script>
+  <script src="js/core/neptunai.js"></script>
+  <script src="js/core/bloat.js"></script>
   <script src="js/main.js"></script>
   <script>window.__skipSetup = true;</script>
   <script src="js/setup.js"></script>
@@ -107,7 +113,7 @@
           ok("closed removed", !w.el.isConnected || w.el.classList.contains("window-closing"));
 
           /* apps launch */
-          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer", "snake", "pacman", "browser"];
+          const apps = ["terminal", "notepad", "explorer", "paint", "calculator", "settings", "recycle", "mediaplayer", "snake", "pacman", "browser", "minesweeper", "stickynotes", "clock"];
           apps.forEach((id) => {
             OS.apps[id].launch();
             const wc = OS.wm.windows[OS.wm.windows.length - 1];
@@ -194,9 +200,10 @@
           /* browser app */
           const brWin = OS.wm.windows.find((x) => x.app === "browser");
           ok("browser window has URL bar", !!brWin.content.querySelector(".browser-url"));
-          ok("browser has nav buttons", brWin.content.querySelectorAll(".browser-nav-btn").length === 4);
+          ok("browser has nav buttons", brWin.content.querySelectorAll("[data-nav]").length >= 4);
           ok("browser has iframe", !!brWin.content.querySelector("iframe"));
           ok("browser has bookmarks", brWin.content.querySelectorAll(".browser-bm-btn").length >= 3);
+          ok("browser has new tab btn", !!brWin.content.querySelector('[data-nav="newtab"]'));
 
           /* games render */
           const snakeWin = OS.wm.windows.find((x) => x.app === "snake");
@@ -204,6 +211,45 @@
           ok("snake score shows", snakeWin.content.textContent.includes("Score: 0"));
           const pacWin = OS.wm.windows.find((x) => x.app === "pacman");
           ok("pacman canvas renders", !!pacWin.content.querySelector("#pac-canvas") && pacWin.content.querySelector("#pac-canvas").width === 304);
+
+          /* minesweeper */
+          const msWin = OS.wm.windows.find((x) => x.app === "minesweeper");
+          ok("minesweeper has grid", !!msWin.content.querySelector(".ms-grid-wrap"));
+          ok("minesweeper has face button", !!msWin.content.querySelector(".ms-face-wrap"));
+          ok("minesweeper has mine counter", !!msWin.content.querySelector(".ms-counter"));
+
+          /* sticky notes */
+          const snWin = OS.wm.windows.find((x) => x.app === "stickynotes");
+          ok("sticky notes has textarea", !!snWin.content.querySelector("textarea"));
+          ok("sticky notes has color buttons", snWin.content.querySelectorAll("button").length >= 4);
+
+          /* clock */
+          const clkWin = OS.wm.windows.find((x) => x.app === "clock");
+          ok("clock has canvas", !!clkWin.content.querySelector("canvas"));
+          ok("clock has digital display", !!clkWin.content.querySelector("#clock-digital"));
+
+          /* start menu has new apps */
+          ok("start menu has Minesweeper", document.getElementById("start-menu").textContent.includes("Minesweeper"));
+          ok("start menu has Solitaire", document.getElementById("start-menu").textContent.includes("Solitaire"));
+          ok("start menu has Clock", document.getElementById("start-menu").textContent.includes("Clock"));
+          ok("start menu has Sticky Notes", document.getElementById("start-menu").textContent.includes("Sticky Notes"));
+          ok("desktop has Minesweeper icon", document.getElementById("icon-layer").textContent.includes("Minesweeper"));
+          ok("desktop has Clock icon", document.getElementById("icon-layer").textContent.includes("Clock"));
+
+          /* control panel has new pages */
+          const cpWin = OS.wm.windows.find((x) => x.app === "settings");
+          ok("control panel has Display page", cpWin.content.textContent.includes("Display"));
+          ok("control panel has Sound page", cpWin.content.textContent.includes("Sound"));
+          ok("control panel has Network page", cpWin.content.textContent.includes("Network"));
+          ok("control panel has Add/Remove", cpWin.content.textContent.includes("Add/Remove"));
+          ok("control panel has Bloatware", cpWin.content.textContent.includes("Bloatware"));
+
+          /* bloatware */
+          ok("bloat API present", !!OS.bloat && typeof OS.bloat.init === "function");
+          ok("activate watermark present", !!document.getElementById("activate-watermark"));
+
+          /* neptunai */
+          ok("neptunai API present", !!OS.neptunai && typeof OS.neptunai.init === "function");
 
           /* XP theme + fullscreen + touch mouse */
           ok("XP face palette applied", getComputedStyle(document.documentElement).getPropertyValue("--face").trim() === "#ece9d8");

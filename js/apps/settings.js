@@ -1,11 +1,24 @@
 /* =========================================================
  * neptuneOS — Settings (Control Panel)
- * Wallpaper, accent color, system info, file reset.
+ * Appearance, System, Tablet Edition, Display, Sound, Network, Add/Remove Programs.
  * ========================================================= */
 (function () {
   "use strict";
 
   const ACCENTS = ["#000080", "#800000", "#008000", "#800080", "#008080", "#000000", "#4444aa"];
+
+  const BLOATWARE_APPS = [
+    { name: "Microslop Teams", size: "247 MB", desc: "Stay connected with your team" },
+    { name: "OneDrive (Not Enough Space)", size: "89 MB", desc: "Cloud storage that's always full" },
+    { name: "Bing Bar", size: "12 MB", desc: "Search the web slower" },
+    { name: "Microslop Copilot", size: "156 MB", desc: "AI that summarizes error messages" },
+    { name: "Candy Crush Saga", size: "312 MB", desc: "Pre-installed for your productivity" },
+    { name: "Microslop Edge (Again)", size: "198 MB", desc: "Your default browser for your default browser" },
+    { name: "LinkedIn Desktop", size: "67 MB", desc: "Professional networking" },
+    { name: "3D Viewer", size: "44 MB", desc: "View 3D models you'll never create" },
+    { name: "Microslop Solitaire Collection Premium Gold Edition XL", size: "523 MB", desc: "Pay $9.99/month for card backs" },
+    { name: "News Bar", size: "34 MB", desc: "Breaking: Your computer is fine" },
+  ];
 
   const app = {
     id: "settings",
@@ -17,8 +30,8 @@
       const win = OS.wm.createWindow({
         title: "Control Panel",
         icon: this.icon,
-        width: 560,
-        height: 420,
+        width: 600,
+        height: 440,
         app: "settings",
       });
 
@@ -26,8 +39,13 @@
         '<div class="settings">' +
         '  <div class="settings-nav">' +
         '    <div class="nav-item sel" data-page="appearance">Appearance</div>' +
-        '    <div class="nav-item" data-page="system">System</div>' +
+        '    <div class="nav-item" data-page="display">Display</div>' +
+        '    <div class="nav-item" data-page="sound">Sound</div>' +
+        '    <div class="nav-item" data-page="network">Network</div>' +
+        '    <div class="nav-item" data-page="addremove">Add/Remove Programs</div>' +
         '    <div class="nav-item" data-page="tablet">Tablet Edition</div>' +
+        '    <div class="nav-item" data-page="bloat">Bloatware</div>' +
+        '    <div class="nav-item" data-page="system">System</div>' +
         "  </div>" +
         '  <div class="settings-body"></div>' +
         "</div>";
@@ -37,9 +55,17 @@
 
       const showPage = (page) => {
         nav.forEach((n) => n.classList.toggle("sel", n.dataset.page === page));
-        if (page === "appearance") renderAppearance();
-        else if (page === "tablet") renderTablet();
-        else renderSystem();
+        const renderer = {
+          appearance: renderAppearance,
+          display: renderDisplay,
+          sound: renderSound,
+          network: renderNetwork,
+          addremove: renderAddRemove,
+          tablet: renderTablet,
+          bloat: renderBloat,
+          system: renderSystem,
+        };
+        if (renderer[page]) renderer[page]();
       };
 
       nav.forEach((n) => n.addEventListener("click", () => showPage(n.dataset.page)));
@@ -57,6 +83,11 @@
           html += '<div class="accent-swatch' + (getAccent() === c ? " sel" : "") + '" data-accent="' + c + '" style="background:' + c + '"></div>';
         });
         html += "</div>";
+        html += "<h3 style='margin-top:18px'>Theme</h3>";
+        html += '<div class="settings-row"><label>Window animations</label>' +
+          '<label class="settings-check"><input type="checkbox" id="anim-toggle" ' +
+          (localStorage.getItem("neptuneos.animations") !== "off" ? "checked" : "") +
+          '> Enable window open/close animations</label></div>';
         body.innerHTML = html;
 
         body.querySelectorAll("[data-wp]").forEach((el) => {
@@ -73,48 +104,151 @@
             el.classList.add("sel");
           });
         });
+        body.querySelector("#anim-toggle").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.animations", e.target.checked ? "on" : "off");
+        });
       }
 
-      function renderSystem() {
-        const size = OS.fs.sizeOf("/C:");
-        const user = OS.setup && OS.setup.userName ? OS.setup.userName() : "Guest";
-        const computer = OS.setup && OS.setup.computerName ? OS.setup.computerName() : "NEPTUNE-1";
+      function renderDisplay() {
+        const res = localStorage.getItem("neptuneos.display.resolution") || "auto";
+        const scale = localStorage.getItem("neptuneos.display.scale") || "100";
+        const freshHz = localStorage.getItem("neptuneos.display.refresh") || "60";
         body.innerHTML =
-          "<h3>About " + OS.brand.product + "</h3>" +
-          "<p><b>" + OS.brand.product + " Version 5.1." + OS.brand.build + "</b> &mdash; a <b>" + OS.brand.company + "</b> product.<br>" + OS.brand.copyright + ".<br>Desktop operating system shell written in plain HTML, CSS &amp; JavaScript. All files and settings are stored in your browser.</p>" +
-          "<p>Registered to: <b>" + user + "</b><br>" +
-          "Computer name: <b>" + computer + "</b><br>" +
-          "Files on disk: <b>" + OS.fs.listRecursive("/C:").filter((f) => f.type === "file").length + "</b><br>" +
-          "Space used: <b>" + size + "</b> bytes</p>" +
-          '<label class="settings-check"><input type="checkbox" id="logon-toggle"' +
-          (OS.setup && OS.setup.logonEnabled && OS.setup.logonEnabled() ? " checked" : "") +
-          '> Require log on at startup</label>' +
-          "<h3>Maintenance</h3>" +
-          '<button class="btn" id="setup-run">Run NeptuneOS setup wizard</button>' +
-          '<button class="btn" id="reset-fs">Reset file system to defaults</button>' +
-          '<p style="font-size:11px;color:var(--text-dim);margin-top:8px;">Reset restores the original folders and sample files. Your saved work will be lost.</p>';
+          "<h3>Display Settings</h3>" +
+          "<p>Adjust resolution, scaling, and refresh rate.</p>" +
+          '<div class="settings-group">' +
+          '<div class="settings-row"><label>Resolution</label>' +
+          '<select class="settings-select" id="res-sel">' +
+          '<option value="auto"' + (res === "auto" ? " selected" : "") + ">Auto (recommended)</option>" +
+          '<option value="1024x768"' + (res === "1024x768" ? " selected" : "") + ">1024 x 768</option>" +
+          '<option value="1280x720"' + (res === "1280x720" ? " selected" : "") + ">1280 x 720</option>" +
+          '<option value="1920x1080"' + (res === "1920x1080" ? " selected" : "") + ">1920 x 1080</option>" +
+          '</select></div>' +
+          '<div class="settings-row"><label>Scaling</label>' +
+          '<select class="settings-select" id="scale-sel">' +
+          '<option value="100"' + (scale === "100" ? " selected" : "") + ">100%</option>" +
+          '<option value="125"' + (scale === "125" ? " selected" : "") + ">125%</option>" +
+          '<option value="150"' + (scale === "150" ? " selected" : "") + ">150%</option>" +
+          '</select></div>' +
+          '<div class="settings-row"><label>Refresh Rate</label>' +
+          '<select class="settings-select" id="hz-sel">' +
+          '<option value="60"' + (freshHz === "60" ? " selected" : "") + ">60 Hz</option>" +
+          '<option value="144"' + (freshHz === "144" ? " selected" : "") + ">144 Hz (probably lying)</option>" +
+          '</select></div>' +
+          '<div class="settings-row"><label>Color depth</label><span style="color:var(--text-dim)">32-bit True Color (always)</span></div>' +
+          "</div>" +
+          '<p style="font-size:11px;color:var(--text-dim);margin-top:12px;">Note: NeptuneOS renders at your browser\'s native resolution. These settings affect scaling and internal dimensions only.</p>';
 
-        const logonToggle = body.querySelector("#logon-toggle");
-        if (logonToggle) {
-          logonToggle.addEventListener("change", () => {
-            OS.setup.setLogonEnabled(logonToggle.checked);
-          });
-        }
-        body.querySelector("#setup-run").addEventListener("click", () => {
-          OS.confirm("Control Panel", "Run the NeptuneOS setup wizard now?").then((ok) => {
-            if (ok && OS.setup && OS.setup.launch) OS.setup.launch();
-          });
+        body.querySelector("#res-sel").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.display.resolution", e.target.value);
         });
-        body.querySelector("#reset-fs").addEventListener("click", () => {
-          OS.confirm("Control Panel", "Reset the file system to its defaults? This cannot be undone.").then((ok) => {
-            if (!ok) return;
-            OS.fs.reset();
-            OS.message("Control Panel", "The file system has been reset.", "info");
-          });
+        body.querySelector("#scale-sel").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.display.scale", e.target.value);
+          document.documentElement.style.zoom = e.target.value === "100" ? "" : (parseInt(e.target.value) / 100).toString();
+        });
+        body.querySelector("#hz-sel").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.display.refresh", e.target.value);
         });
       }
 
-      showPage("appearance");
+      function renderSound() {
+        const vol = parseInt(localStorage.getItem("neptuneos.sound.volume") || "75");
+        const muted = localStorage.getItem("neptuneos.sound.muted") === "true";
+        const sfxEnabled = localStorage.getItem("neptuneos.sound.sfx") !== "off";
+        body.innerHTML =
+          "<h3>Sound Settings</h3>" +
+          '<div class="settings-group">' +
+          '<div class="settings-row"><label>Master Volume</label>' +
+          '<input type="range" id="vol-slider" min="0" max="100" value="' + vol + '" style="width:200px;">' +
+          '<span id="vol-val">' + vol + "%</span></div>" +
+          '<div class="settings-row"><label>Mute</label>' +
+          '<label class="settings-check"><input type="checkbox" id="mute-toggle"' + (muted ? " checked" : "") + "> Mute all sounds</label></div>" +
+          '<div class="settings-row"><label>Sound Effects</label>' +
+          '<label class="settings-check"><input type="checkbox" id="sfx-toggle"' + (sfxEnabled ? "" : " checked") + "> Disable system sound effects</label></div>" +
+          "</div>" +
+          "<h3 style='margin-top:16px'>Sound Scheme</h3>" +
+          '<div class="settings-row"><label>Current scheme</label><span style="color:var(--text-dim)">NeptuneOS Default</span></div>' +
+          '<button class="btn" id="test-sound" style="margin-top:8px;">Test Sound</button>' +
+          '<p style="font-size:11px;color:var(--text-dim);margin-top:12px;">NeptuneOS uses the Web Audio API for all sounds. Volume is shared with your browser.</p>';
+
+        body.querySelector("#vol-slider").addEventListener("input", (e) => {
+          const v = e.target.value;
+          body.querySelector("#vol-val").textContent = v + "%";
+          localStorage.setItem("neptuneos.sound.volume", v);
+          if (OS.sfx && OS.sfx.setVolume) OS.sfx.setVolume(parseInt(v));
+        });
+        body.querySelector("#mute-toggle").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.sound.muted", e.target.checked);
+          if (OS.sfx) OS.sfx.setMuted(e.target.checked);
+        });
+        body.querySelector("#sfx-toggle").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.sound.sfx", e.target.checked ? "off" : "on");
+        });
+        body.querySelector("#test-sound").addEventListener("click", () => {
+          if (OS.sfx && OS.sfx.play) OS.sfx.play("click");
+        });
+      }
+
+      function renderNetwork() {
+        const hostname = localStorage.getItem("neptuneos.network.hostname") || "NEPTUNE-1";
+        const workgroup = localStorage.getItem("neptuneos.network.workgroup") || "MICROSLOP";
+        body.innerHTML =
+          "<h3>Network Connections</h3>" +
+          '<div class="settings-group">' +
+          '<div class="settings-row"><label>Status</label><span class="settings-ok">Connected</span></div>' +
+          '<div class="settings-row"><label>Connection type</label><span style="color:var(--text-dim)">Virtual Ethernet (Browser API)</span></div>' +
+          '<div class="settings-row"><label>Speed</label><span style="color:var(--text-dim)">∞ Mbps (local only)</span></div>' +
+          "</div>" +
+          "<h3 style='margin-top:16px'>Identification</h3>" +
+          '<div class="settings-row"><label>Computer name</label>' +
+          '<input type="text" class="settings-input" id="hostname-input" value="' + OS.esc(hostname) + '" style="width:180px;"></div>' +
+          '<div class="settings-row"><label>Workgroup</label>' +
+          '<input type="text" class="settings-input" id="workgroup-input" value="' + OS.esc(workgroup) + '" style="width:180px;"></div>' +
+          '<button class="btn" id="net-apply" style="margin-top:8px;">Apply</button>' +
+          "<h3 style='margin-top:16px'>Firewall</h3>" +
+          '<div class="settings-row"><label>Firewall</label><span class="settings-ok">Enabled (blocking nothing, since this is fake)</span></div>' +
+          "<h3 style='margin-top:16px'>Network Discovery</h3>" +
+          '<div class="settings-row"><label>Discover other computers</label>' +
+          '<label class="settings-check"><input type="checkbox" checked disabled> Always on (there are no other computers)</label></div>';
+
+        body.querySelector("#net-apply").addEventListener("click", () => {
+          const h = body.querySelector("#hostname-input").value.trim() || "NEPTUNE-1";
+          const w = body.querySelector("#workgroup-input").value.trim() || "MICROSLOP";
+          localStorage.setItem("neptuneos.network.hostname", h);
+          localStorage.setItem("neptuneos.network.workgroup", w);
+          OS.message("Network", "Network settings applied. Nothing actually changed.", "info");
+        });
+      }
+
+      function renderAddRemove() {
+        let html = "<h3>Add or Remove Programs</h3>" +
+          '<div class="settings-row"><label>Currently installed programs:</label></div>' +
+          '<div class="settings-prog-list" id="prog-list">';
+        const coreApps = [
+          { name: "NeptuneOS", size: "∞", desc: "Your operating system (you can't remove this)" },
+          { name: "MS-DOS Prompt", size: "42 KB", desc: "Command line interface" },
+          { name: "Notepad", size: "18 KB", desc: "Text editor" },
+          { name: "Calculator", size: "24 KB", desc: "Arithmetic device" },
+          { name: "Paint", size: "56 KB", desc: "Drawing program" },
+          { name: "Media Player", size: "34 KB", desc: "Music and visualization" },
+          { name: "File Explorer", size: "78 KB", desc: "Browse the virtual file system" },
+          { name: "Browser", size: "12 KB", desc: "Web browser with limited iframe support" },
+          { name: "Snake", size: "8 KB", desc: "Classic snake game" },
+          { name: "Pacman", size: "11 KB", desc: "Pac-Man clone" },
+          { name: "Solitaire", size: "14 KB", desc: "Klondike solitaire" },
+          { name: "Minesweeper", size: "9 KB", desc: "Classic minesweeper" },
+          { name: "Sticky Notes", size: "6 KB", desc: "Desktop sticky notes" },
+          { name: "Clock", size: "5 KB", desc: "Analog and digital clock" },
+        ];
+        coreApps.forEach((a) => {
+          html += '<div class="settings-prog">' +
+            '<div class="settings-prog-info"><b>' + OS.esc(a.name) + '</b> <span style="color:var(--text-dim);font-size:11px;">(' + a.size + ')</span>' +
+            '<div style="font-size:11px;color:var(--text-dim);">' + OS.esc(a.desc) + '</div></div>' +
+            '<span style="font-size:11px;color:#c00;">System component</span></div>';
+        });
+        html += "</div>";
+        body.innerHTML = html;
+      }
 
       function renderTablet() {
         const isTablet = OS.tablet && OS.tablet.isEnabled();
@@ -147,6 +281,96 @@
           }
         });
       }
+
+      function renderBloat() {
+        let html = "<h3>Microslop Bloatware Manager</h3>" +
+          '<p style="color:var(--text-dim);margin-bottom:12px;">These programs were pre-installed without your consent. You\'re welcome.</p>' +
+          '<div class="settings-prog-list">';
+        BLOATWARE_APPS.forEach((a) => {
+          html += '<div class="settings-prog">' +
+            '<div class="settings-prog-info"><b>' + OS.esc(a.name) + '</b> <span style="color:var(--text-dim);font-size:11px;">(' + a.size + ')</span>' +
+            '<div style="font-size:11px;color:var(--text-dim);">' + OS.esc(a.desc) + '</div></div>' +
+            '<button class="btn btn-small" disabled title="Just kidding! You can never remove these.">Remove</button></div>';
+        });
+        html += "</div>" +
+          '<p style="font-size:11px;color:#c00;margin-top:12px;">⚠ None of these can actually be removed. This is a Microslop product. We own your computer now.</p>';
+        body.innerHTML = html;
+      }
+
+      function renderSystem() {
+        const size = OS.fs.sizeOf("/C:");
+        const user = OS.setup && OS.setup.userName ? OS.setup.userName() : "Guest";
+        const computer = OS.setup && OS.setup.computerName ? OS.setup.computerName() : "NEPTUNE-1";
+        const uptime = Math.floor((Date.now() - (window.__bootTime || Date.now())) / 1000);
+        const mins = Math.floor(uptime / 60);
+        const hrs = Math.floor(mins / 60);
+        const uptimeStr = hrs > 0 ? hrs + "h " + (mins % 60) + "m " + (uptime % 60) + "s" : mins + "m " + (uptime % 60) + "s";
+
+        body.innerHTML =
+          "<h3>About " + OS.brand.product + "</h3>" +
+          "<p><b>" + OS.brand.product + " Version 5.1." + OS.brand.build + "</b> &mdash; a <b>" + OS.brand.company + "</b> product.<br>" + OS.brand.copyright + ".<br>Desktop operating system shell written in plain HTML, CSS &amp; JavaScript. All files and settings are stored in your browser.</p>" +
+          '<div class="settings-group">' +
+          "<p>Registered to: <b>" + user + "</b><br>" +
+          "Computer name: <b>" + computer + "</b><br>" +
+          "Files on disk: <b>" + OS.fs.listRecursive("/C:").filter((f) => f.type === "file").length + "</b><br>" +
+          "Space used: <b>" + size + "</b> bytes<br>" +
+          "Uptime: <b>" + uptimeStr + "</b><br>" +
+          "RAM: <b>640KB</b> (ought to be enough for anybody)<br>" +
+          "CPU: <b>1x Virtual JavaScript Engine @ ∞ GHz</b></p>" +
+          "</div>" +
+          '<label class="settings-check"><input type="checkbox" id="logon-toggle"' +
+          (OS.setup && OS.setup.logonEnabled && OS.setup.logonEnabled() ? " checked" : "") +
+          '> Require log on at startup</label>' +
+          "<h3>Maintenance</h3>" +
+          '<button class="btn" id="setup-run">Run NeptuneOS setup wizard</button> ' +
+          '<button class="btn" id="reset-fs">Reset file system to defaults</button> ' +
+          '<button class="btn" id="watermark-toggle">Toggle "Activate NeptuneOS" watermark</button>' +
+          '<button class="btn" id="neptunai-toggle">Toggle NeptunAI Assistant</button>' +
+          '<p style="font-size:11px;color:var(--text-dim);margin-top:8px;">Reset restores the original folders and sample files. Your saved work will be lost.</p>';
+
+        const logonToggle = body.querySelector("#logon-toggle");
+        if (logonToggle) {
+          logonToggle.addEventListener("change", () => {
+            OS.setup.setLogonEnabled(logonToggle.checked);
+          });
+        }
+        body.querySelector("#setup-run").addEventListener("click", () => {
+          OS.confirm("Control Panel", "Run the NeptuneOS setup wizard now?").then((ok) => {
+            if (ok && OS.setup && OS.setup.launch) OS.setup.launch();
+          });
+        });
+        body.querySelector("#reset-fs").addEventListener("click", () => {
+          OS.confirm("Control Panel", "Reset the file system to its defaults? This cannot be undone.").then((ok) => {
+            if (!ok) return;
+            OS.fs.reset();
+            OS.message("Control Panel", "The file system has been reset.", "info");
+          });
+        });
+        body.querySelector("#watermark-toggle").addEventListener("click", () => {
+          const wm = document.getElementById("activate-watermark");
+          if (wm) {
+            wm.remove();
+            try { localStorage.setItem("neptuneos.watermark", "off"); } catch (e) {}
+            OS.message("Control Panel", "Activate NeptuneOS watermark hidden.", "info");
+          } else {
+            try { localStorage.removeItem("neptuneos.watermark"); } catch (e) {}
+            location.reload();
+          }
+        });
+        body.querySelector("#neptunai-toggle").addEventListener("click", () => {
+          if (OS.neptunai) {
+            if (OS.neptunai.isEnabled()) {
+              OS.neptunai.disable();
+              OS.message("Control Panel", "NeptunAI has been disabled. It's crying now.", "info");
+            } else {
+              OS.neptunai.enable();
+              OS.message("Control Panel", "NeptunAI has been re-enabled! 🎉", "info");
+            }
+          }
+        });
+      }
+
+      showPage("appearance");
     },
   };
 
@@ -162,7 +386,6 @@
     root.setProperty("--title-blue", hex);
   }
 
-  /* apply saved accent on boot */
   (function applySaved() {
     const a = getAccent();
     document.documentElement.style.setProperty("--accent", a);

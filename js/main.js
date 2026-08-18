@@ -86,9 +86,33 @@
     });
 
     d.addItem({
+      id: "solitaire", label: "Solitaire",
+      icon: "assets/icons/solitaire.svg",
+      launch: () => OS.apps.solitaire.launch(),
+    });
+
+    d.addItem({
       id: "browser", label: "Browser",
       icon: "assets/icons/browser.svg",
       launch: () => OS.apps.browser.launch(),
+    });
+
+    d.addItem({
+      id: "minesweeper", label: "Minesweeper",
+      icon: "assets/icons/minesweeper.svg",
+      launch: () => OS.apps.minesweeper.launch(),
+    });
+
+    d.addItem({
+      id: "stickynotes", label: "Sticky Notes",
+      icon: "assets/icons/stickynotes.svg",
+      launch: () => OS.apps.stickynotes.launch(),
+    });
+
+    d.addItem({
+      id: "clock", label: "Clock",
+      icon: "assets/icons/clock.svg",
+      launch: () => OS.apps.clock.launch(),
     });
   }
 
@@ -103,6 +127,8 @@
     OS.sfx.init();
     OS.fullscreen.init();
     if (OS.dock) OS.dock.init();
+    if (OS.neptunai) OS.neptunai.init();
+    if (OS.bloat) OS.bloat.init();
 
     /* Auto-show dock in tablet mode */
     if (OS.tablet && OS.tablet.isEnabled()) {
