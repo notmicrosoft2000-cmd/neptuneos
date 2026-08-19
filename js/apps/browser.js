@@ -1,13 +1,18 @@
 /* =========================================================
- * neptuneOS — Web Browser (multi-tab)
- * Direct-iframe browser with DuckDuckGo HTML search, URL
- * navigation, New Tab page, bookmarks, error fallback,
- * and full tab management.
+ * neptuneOS — Web Browser (multi-tab, real proxy rendering)
+ * Searches via DuckDuckGo HTML. Loads pages via direct iframe
+ * first, falls back to CORS proxy rendering in srcdoc.
  * ========================================================= */
 (function () {
   "use strict";
 
   var DDG_HTML = "https://html.duckduckgo.com/html/";
+
+  /* CORS proxy chain — tried in order from browser context */
+  var PROXIES = [
+    function (url) { return "https://corsproxy.io/?" + encodeURIComponent(url); },
+    function (url) { return "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url); },
+  ];
 
   var BOOKMARKS = [
     { label: "Home", url: "__home__" },
@@ -105,6 +110,59 @@
     }
   }
 
+  /* Rewrite relative URLs in HTML to absolute */
+  function rewriteHTML(html, baseUrl) {
+    try {
+      var base = new URL(baseUrl);
+      var origin = base.origin;
+      /* Rewrite src/srcdoc attributes */
+      html = html.replace(/((?:src|href|action|poster|srcset)\s*=\s*["'])(\/[^"']*)/g, function (m, prefix, path) {
+        return prefix + origin + path;
+      });
+      /* Rewrite url() in styles */
+      html = html.replace(/(url\s*\(\s*["']?)(\/[^"')]*)(["']?\s*\))/g, function (m, prefix, path, suffix) {
+        return prefix + origin + path + suffix;
+      });
+      /* Remove X-Frame-Options meta */
+      html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?x-frame-options["']?[^>]*>/gi, "");
+      html = html.replace(/<meta[^>]*content\s*=\s*["']?(?:DENY|SAMEORIGIN)[^"']*["'][^>]*http-equiv[^>]*>/gi, "");
+      /* Add base tag */
+      html = html.replace(/<head([^>]*)>/i, '<head$1><base href="' + baseUrl + '">');
+      /* Remove scripts to prevent them from breaking (optional, could keep some) */
+      /* html = html.replace(/<script[\s\S]*?<\/script>/gi, ''); */
+    } catch (e) {}
+    return html;
+  }
+
+  /* Fetch page through proxy chain */
+  function fetchViaProxy(url, callback) {
+    var proxyIdx = 0;
+
+    function tryNext() {
+      if (proxyIdx >= PROXIES.length) {
+        callback(null);
+        return;
+      }
+      var proxyUrl = PROXIES[proxyIdx](url);
+      proxyIdx++;
+
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", proxyUrl, true);
+      xhr.timeout = 8000;
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 400 && xhr.responseText.length > 100) {
+          callback(xhr.responseText);
+        } else {
+          tryNext();
+        }
+      };
+      xhr.onerror = function () { tryNext(); };
+      xhr.ontimeout = function () { tryNext(); };
+      xhr.send();
+    }
+    tryNext();
+  }
+
   /* ── Tab model ── */
 
   function createTab(url) {
@@ -148,6 +206,7 @@
       loadTimer: null,
       blankTimer: null,
       innerFrame: null,
+      proxyMode: false,
     };
 
     errorOverlay.querySelector(".browser-error-open-real").addEventListener("click", function () {
@@ -280,28 +339,7 @@
     if (tab.isHome) return;
     clearTimeout(tab.loadTimer);
     clearTimeout(tab.blankTimer);
-
-    try {
-      var loc = tab.iframe.contentWindow.location.href;
-      if (loc === "about:blank" || loc === "about:srcdoc") {
-        tab.blankTimer = setTimeout(function () {
-          try {
-            var loc2 = tab.iframe.contentWindow.location.href;
-            if (loc2 === "about:blank" || loc2 === "about:srcdoc") {
-              showError(tab, tab.currentUrl, "This page could not be loaded. It may block iframe embedding. Try opening it in your real browser instead.");
-            } else {
-              statusEl.textContent = "Done";
-            }
-          } catch (e2) {
-            statusEl.textContent = "Done";
-          }
-        }, 1500);
-      } else {
-        statusEl.textContent = "Done";
-      }
-    } catch (e) {
-      statusEl.textContent = "Done";
-    }
+    statusEl.textContent = "Done";
   }
 
   function loadNewTabFor(tab) {
@@ -361,8 +399,6 @@
     at.blank.style.display = "none";
     at.errorOverlay.style.display = "none";
     at.iframe.style.display = "block";
-    at.iframe.srcdoc = "";
-    at.iframe.src = url;
 
     var domain = getDomain(url);
     urlInput.value = url;
@@ -373,18 +409,53 @@
     updateTabTitle(at);
     updateButtons();
 
+    /* Strategy 1: Try direct iframe load */
+    at.iframe.srcdoc = "";
+    at.iframe.src = url;
+    at.proxyMode = false;
+
+    /* If after 3s the iframe is still on about:blank, try proxy */
     at.loadTimer = setTimeout(function () {
+      if (at.isHome || at.proxyMode) return;
       try {
         var loc = at.iframe.contentWindow.location.href;
         if (loc === "about:blank" || loc === "about:srcdoc") {
-          showError(at, url, "This page took too long to respond or could not be loaded.");
+          /* Direct load failed — try proxy rendering */
+          loadViaProxy(at, url);
         } else {
           statusEl.textContent = "Done";
         }
       } catch (e) {
+        /* Cross-origin means it loaded! */
         statusEl.textContent = "Done";
       }
-    }, 10000);
+    }, 3000);
+  }
+
+  function loadViaProxy(tab, url) {
+    statusEl.textContent = "Loading via proxy...";
+    tab.proxyMode = true;
+    clearTimeout(tab.loadTimer);
+
+    fetchViaProxy(url, function (html) {
+      if (!html) {
+        showError(tab, url, "This page could not be loaded through any proxy. Try opening it in your real browser.");
+        return;
+      }
+      var rewritten = rewriteHTML(html, url);
+      tab.iframe.src = "about:blank";
+      setTimeout(function () {
+        tab.iframe.srcdoc = rewritten;
+        statusEl.textContent = "Done (proxied)";
+      }, 50);
+    });
+
+    /* Safety timeout */
+    tab.loadTimer = setTimeout(function () {
+      if (statusEl.textContent.indexOf("Loading") !== -1) {
+        showError(tab, url, "The page took too long to respond via proxy.");
+      }
+    }, 15000);
   }
 
   function showError(tab, url, desc) {

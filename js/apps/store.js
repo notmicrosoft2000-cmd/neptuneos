@@ -400,7 +400,7 @@
     "#store-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 22px 22px;overflow-y:auto;flex:1;}" +
 
     /* card */
-    ".store-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;display:flex;flex-direction:column;transition:border-color .2s,background .2s,box-shadow .2s;overflow:hidden;}" +
+    ".store-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;display:flex;flex-direction:column;transition:border-color .2s,background .2s,box-shadow .2s;overflow:visible;}" +
     ".store-card:hover{border-color:rgba(100,180,255,0.25);background:rgba(255,255,255,0.07);box-shadow:0 4px 16px rgba(0,0,0,0.2);}" +
 
     /* card icon area */
@@ -423,7 +423,7 @@
     ".store-card-desc{font-size:11px;color:rgba(255,255,255,0.45);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}" +
 
     /* card actions */
-    ".store-card-actions{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid rgba(255,255,255,0.05);margin-top:10px;}" +
+    ".store-card-actions{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid rgba(255,255,255,0.05);margin-top:10px;flex-shrink:0;}" +
     ".store-price{font-size:12px;font-weight:600;color:rgba(255,255,255,0.3);}" +
 
     /* buttons */

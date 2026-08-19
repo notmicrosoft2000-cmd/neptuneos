@@ -9,15 +9,15 @@
 
   var HISTORY_LEN = 60;
   var TICK_MS = 1500;
-  var TOTAL_RAM_KB = 640;
+  var TOTAL_RAM_KB = 1024;
 
-  /* Base resource costs */
+  /* Base resource costs (idle = low usage) */
   var COST = {
-    shell:      { cpu: 8,  ram: 80  },
-    perWindow:  { cpu: 2,  ram: 18  },
-    browser:    { cpu: 6,  ram: 30  },
-    game:       { cpu: 12, ram: 25  },
-    emulator:   { cpu: 15, ram: 40  },
+    shell:      { cpu: 4,  ram: 45  },
+    perWindow:  { cpu: 1.5,ram: 12  },
+    browser:    { cpu: 4,  ram: 20  },
+    game:       { cpu: 8,  ram: 18  },
+    emulator:   { cpu: 6,  ram: 15  },
   };
 
   var cpu = 12, ram = 80, gpu = 5, net = 2;
@@ -83,10 +83,10 @@
     var body = document.body;
     body.classList.remove("high-load", "critical-load");
 
-    if (cpu > 90 || ram > 92) {
+    if (cpu > 92 || ram > 94) {
       body.classList.add("critical-load");
-      if (Math.random() < 0.08 && wc >= 5) triggerBSOD();
-    } else if (cpu > 72 || ram > 78) {
+      if (Math.random() < 0.05 && wc >= 6) triggerBSOD();
+    } else if (cpu > 78 || ram > 82) {
       body.classList.add("high-load");
     }
   }
@@ -217,8 +217,8 @@
     getNetwork: function () { return net; },
     getCPUHistory: function () { return cpuHist.slice(); },
     getRAMHistory: function () { return ramHist.slice(); },
-    getTotalRAM: function () { return "640 KB"; },
-    getUsedRAM: function () { return Math.round(TOTAL_RAM_KB * (ram / 100)) + " KB"; },
+    getTotalRAM: function () { return "1 GB"; },
+    getUsedRAM: function () { return Math.round(TOTAL_RAM_KB * (ram / 100)) + " MB"; },
     isHighLoad: function () { return cpu > 72 || ram > 78; },
     isCritical: function () { return cpu > 90 || ram > 92; },
     init: init,

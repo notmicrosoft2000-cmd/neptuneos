@@ -387,6 +387,7 @@
     shutdown() {
       OS.confirm("Shut Down", "Are you sure you want to shut down NeptuneOS?").then((ok) => {
         if (!ok) return;
+        if (OS.sfx && OS.sfx.shutdown) OS.sfx.shutdown();
         /* close all windows */
         const wins = OS.wm.windows.slice();
         wins.forEach((w) => { try { w.close(); } catch (e) {} });

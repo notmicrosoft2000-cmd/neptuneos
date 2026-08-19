@@ -88,6 +88,111 @@
     if (logonEl) logonEl.remove();
     logonEl = null;
 
+    /* Show text-mode blue install screen first (Windows XP style) */
+    showTextModeInstall();
+  }
+
+  /* ── Text-mode blue install screen (XP style) ── */
+
+  var TEXTMODE_STEPS = [
+    { text: "NeptuneOS Setup is loading files...", dur: 800 },
+    { text: "Inspection of your computer's hardware configuration...", dur: 600 },
+    { text: "NeptuneOS License Agreement", dur: 400 },
+    { text: "Setup is formatting drive C: (NeptuneOS)...", dur: 1200, progress: true },
+    { text: "Setup is copying NeptuneOS installation files...", dur: 1500, progress: true },
+    { text: "Setup is initializing NeptuneOS configuration...", dur: 800 },
+    { text: "NeptuneOS Setup is restarting your computer...", dur: 600 },
+  ];
+
+  function showTextModeInstall() {
+    var el = document.createElement("div");
+    el.id = "textmode-setup";
+    el.style.cssText =
+      "position:fixed;inset:0;z-index:1700;background:#0000aa;color:#fff;" +
+      "font-family:'Lucida Console','Courier New',monospace;font-size:14px;" +
+      "display:flex;flex-direction:column;padding:0;overflow:hidden;";
+
+    el.innerHTML =
+      '<div style="background:#0000aa;padding:16px 32px;border-bottom:2px solid #aaa;">' +
+      '  <span style="font-size:16px;font-weight:bold;">NeptuneOS Setup</span>' +
+      '  <span style="float:right;font-size:12px;color:#aaa;">Version 5.1.2600</span>' +
+      '</div>' +
+      '<div style="flex:1;padding:24px 32px;display:flex;flex-direction:column;">' +
+      '  <div id="tm-status" style="margin-bottom:16px;">Welcome to NeptuneOS Setup.</div>' +
+      '  <div id="tm-detail" style="font-size:12px;color:#aaa;margin-bottom:20px;"></div>' +
+      '  <div id="tm-progress-wrap" style="display:none;margin:0 auto;width:420px;">' +
+      '    <div style="border:1px solid #555;background:#000;height:18px;position:relative;overflow:hidden;">' +
+      '      <div id="tm-progress-fill" style="width:0%;height:100%;background:#3388dd;transition:width 0.3s;"></div>' +
+      '    </div>' +
+      '    <div id="tm-pct" style="text-align:center;font-size:11px;color:#aaa;margin-top:4px;">0%</div>' +
+      '  </div>' +
+      '  <div style="flex:1;"></div>' +
+      '  <div style="text-align:center;font-size:11px;color:#555;">' +
+      '    Press F6 if you need to install a third-party SCSI or RAID driver...' +
+      '  </div>' +
+      '</div>' +
+      '<div style="background:#0000aa;padding:8px 32px;border-top:1px solid #555;font-size:11px;color:#aaa;">' +
+      '  <span>NeptuneOS Setup</span>' +
+      '  <span style="float:right;">Supported by Neptune Productions</span>' +
+      '</div>';
+
+    document.body.appendChild(el);
+
+    var statusEl = el.querySelector("#tm-status");
+    var detailEl = el.querySelector("#tm-detail");
+    var progressWrap = el.querySelector("#tm-progress-wrap");
+    var progressFill = el.querySelector("#tm-progress-fill");
+    var pctEl = el.querySelector("#tm-pct");
+
+    var stepIdx = 0;
+
+    function runStep() {
+      if (stepIdx >= TEXTMODE_STEPS.length) {
+        /* Done — fade out and start wizard */
+        el.style.transition = "opacity 0.6s";
+        el.style.opacity = "0";
+        setTimeout(function () {
+          el.remove();
+          openWizardShell();
+        }, 600);
+        return;
+      }
+
+      var s = TEXTMODE_STEPS[stepIdx];
+      statusEl.textContent = s.text;
+      detailEl.textContent = "";
+
+      if (s.progress) {
+        progressWrap.style.display = "block";
+        var p = 0;
+        var iv = setInterval(function () {
+          p += Math.random() * 8 + 2;
+          if (p >= 100) {
+            p = 100;
+            clearInterval(iv);
+            progressFill.style.width = "100%";
+            pctEl.textContent = "100%";
+            stepIdx++;
+            setTimeout(runStep, 300);
+            return;
+          }
+          progressFill.style.width = Math.round(p) + "%";
+          pctEl.textContent = Math.round(p) + "%";
+        }, s.dur / 12);
+      } else {
+        setTimeout(function () {
+          stepIdx++;
+          runStep();
+        }, s.dur);
+      }
+    }
+
+    setTimeout(runStep, 400);
+  }
+
+  /* ── Actual wizard shell (after text-mode screen) ── */
+
+  function openWizardShell() {
     overlay = document.createElement("div");
     overlay.id = "setup-overlay";
     overlay.innerHTML =
@@ -375,7 +480,7 @@
   function logOn() {
     if (logonEl) logonEl.remove();
     logonEl = null;
-    if (OS.sfx && OS.sfx.context && OS.sfx.blip) OS.sfx.blip();
+    if (OS.sfx && OS.sfx.context && OS.sfx.logon) OS.sfx.logon();
   }
 
   /* ---------------- boot integration ---------------- */

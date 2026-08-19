@@ -267,7 +267,7 @@
           ok("hardware CPU is number", typeof OS.hardware.getCPU() === "number");
           ok("hardware RAM is number", typeof OS.hardware.getRAM() === "number");
           ok("hardware GPU is number", typeof OS.hardware.getGPU() === "number");
-          ok("hardware total RAM is 640KB", OS.hardware.getTotalRAM() === "640 KB");
+          ok("hardware total RAM is 1 GB", OS.hardware.getTotalRAM() === "1 GB");
           ok("hardware CPU history", Array.isArray(OS.hardware.getCPUHistory()) && OS.hardware.getCPUHistory().length > 0);
 
           /* task manager */
