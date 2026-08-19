@@ -126,6 +126,24 @@
       icon: "assets/icons/store.svg",
       launch: () => OS.apps.store.launch(),
     });
+
+    d.addItem({
+      id: "email", label: "Neptune Mail",
+      icon: "assets/icons/email.svg",
+      launch: () => OS.apps.email.launch(),
+    });
+
+    d.addItem({
+      id: "tetris", label: "Tetris",
+      icon: "assets/icons/tetris.svg",
+      launch: () => OS.apps.tetris.launch(),
+    });
+
+    d.addItem({
+      id: "game2048", label: "2048",
+      icon: "assets/icons/game2048.svg",
+      launch: () => OS.apps.game2048.launch(),
+    });
   }
 
   function boot() {
@@ -142,6 +160,32 @@
     if (OS.hardware) OS.hardware.init();
     if (OS.neptunai) OS.neptunai.init();
     if (OS.bloat) OS.bloat.init();
+    if (OS.notifications) OS.notifications.init();
+    if (OS.weather) OS.weather.init();
+    if (OS.volumemixer) OS.volumemixer.init();
+
+    /* Wallpaper slideshow */
+    var slideshowKey = "neptuneos.slideshow";
+    var slideshowInterval = null;
+    function startSlideshow() {
+      if (slideshowInterval) clearInterval(slideshowInterval);
+      var delay = parseInt(localStorage.getItem("neptuneos.slideshow.delay") || "30");
+      if (delay < 5) delay = 5;
+      slideshowInterval = setInterval(function () {
+        var keys = Object.keys(OS.wallpapers || {});
+        if (keys.length < 2) return;
+        var current = OS.desktop.wallpaper;
+        var next;
+        do { next = keys[Math.floor(Math.random() * keys.length)]; } while (next === current);
+        OS.desktop.setWallpaper(next);
+      }, delay * 1000);
+    }
+    function stopSlideshow() {
+      if (slideshowInterval) { clearInterval(slideshowInterval); slideshowInterval = null; }
+    }
+    if (localStorage.getItem(slideshowKey) === "true") startSlideshow();
+    OS.startSlideshow = startSlideshow;
+    OS.stopSlideshow = stopSlideshow;
 
     /* Auto-show dock in tablet mode */
     if (OS.tablet && OS.tablet.isEnabled()) {
@@ -164,6 +208,7 @@
     const bootFill = bootScreen.querySelector(".boot-bar-fill");
     const hideBoot = () => {
       bootScreen.classList.add("hidden");
+      if (OS.sfx && typeof OS.sfx.startup === "function") OS.sfx.startup();
       setTimeout(() => bootScreen.remove(), 600);
     };
     bootFill.addEventListener("animationend", hideBoot);

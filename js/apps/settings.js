@@ -76,6 +76,14 @@
             '<div style="text-align:center;font-size:11px;margin-top:3px;">' + OS.esc(wp.name) + "</div></div>";
         });
         html += "</div>";
+        html += "<h3 style='margin-top:18px'>Wallpaper Slideshow</h3>";
+        var slideshowOn = localStorage.getItem("neptuneos.slideshow") === "true";
+        var slideshowDelay = localStorage.getItem("neptuneos.slideshow.delay") || "30";
+        html += '<div class="settings-row"><label>Enable slideshow</label>' +
+          '<label class="settings-check"><input type="checkbox" id="slideshow-toggle"' + (slideshowOn ? " checked" : "") + "> Rotate wallpapers automatically</label></div>";
+        html += '<div class="settings-row"><label>Interval (seconds)</label>' +
+          '<input type="range" id="slideshow-delay" min="5" max="120" value="' + slideshowDelay + '" style="width:160px;">' +
+          '<span id="slideshow-delay-val">' + slideshowDelay + "s</span></div>";
         html += "<h3 style='margin-top:18px'>Accent color</h3><p>Affects window title bars and selection highlights.</p><div>";
         ACCENTS.forEach((c) => {
           html += '<div class="accent-swatch' + (getAccent() === c ? " sel" : "") + '" data-accent="' + c + '" style="background:' + c + '"></div>';
@@ -158,6 +166,17 @@
         body.querySelector("#shadow-toggle").addEventListener("change", (e) => {
           localStorage.setItem("neptuneos.window.shadows", e.target.checked ? "on" : "off");
           document.documentElement.style.setProperty("--window-shadow", e.target.checked ? "0 4px 12px rgba(0,0,0,0.35)" : "none");
+        });
+        body.querySelector("#slideshow-toggle").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.slideshow", e.target.checked ? "true" : "false");
+          if (e.target.checked) { if (OS.startSlideshow) OS.startSlideshow(); }
+          else { if (OS.stopSlideshow) OS.stopSlideshow(); }
+        });
+        body.querySelector("#slideshow-delay").addEventListener("input", (e) => {
+          var v = e.target.value;
+          body.querySelector("#slideshow-delay-val").textContent = v + "s";
+          localStorage.setItem("neptuneos.slideshow.delay", v);
+          if (localStorage.getItem("neptuneos.slideshow") === "true" && OS.startSlideshow) OS.startSlideshow();
         });
       }
 

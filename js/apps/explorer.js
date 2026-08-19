@@ -62,7 +62,8 @@
         '    <button class="btn" data-act="newfile" title="New Text File">New Text File</button>' +
         '    <button class="btn" data-act="delete" title="Delete (to Recycle Bin)">Delete</button>' +
         '    <button class="btn" data-act="rename" title="Rename">Rename</button>' +
-        "  </div>" +
+        '    <input type="text" id="explorer-search" placeholder="Search files..." class="explorer-search-input" style="margin-left:auto;width:140px;font-size:11px;padding:2px 6px;">' +
+        '  </div>' +
         '  <div class="explorer-address"><label>Address</label>' +
         '    <input type="text" id="explorer-address" spellcheck="false"></div>' +
         '  <div class="explorer-main">' +
@@ -96,6 +97,38 @@
           if (OS.fs.exists(p) && OS.fs.isDir(p)) goto(p);
           else OS.message("My Computer", "The path \u201C" + addrEl.value + "\u201D cannot be found.", "warn");
         }
+      });
+
+      /* --- file search --- */
+      const searchEl = win.content.querySelector("#explorer-search");
+      let searchTimeout = null;
+      searchEl.addEventListener("input", function () {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+          const query = searchEl.value.trim().toLowerCase();
+          if (!query) { render(); return; }
+          const results = OS.fs.listRecursive("/").filter(function (item) {
+            return item.name.toLowerCase().includes(query);
+          });
+          filesEl.innerHTML = "";
+          if (!results.length) {
+            filesEl.innerHTML = '<div class="explorer-empty">No files found matching \u201C' + OS.esc(query) + "\u201D.</div>";
+            return;
+          }
+          results.slice(0, 50).forEach(function (item) {
+            const el = document.createElement("div");
+            el.className = "explorer-file";
+            el.dataset.name = item.name;
+            el.dataset.path = item.path;
+            el.innerHTML = '<img src="' + iconFor(item.name, item.type) + '" alt="" draggable="false"><div class="label">' + OS.esc(item.name) + '</div><div class="label" style="font-size:9px;color:#999;">' + OS.esc(item.path) + '</div>';
+            filesEl.appendChild(el);
+            el.addEventListener("dblclick", function () {
+              if (item.type === "dir") goto(item.path);
+              else openFile(item.name, { type: item.type });
+            });
+          });
+          win.setTitle("Search: " + query);
+        }, 300);
       });
 
       /* --- sidebar --- */
@@ -161,6 +194,15 @@
             }
           });
 
+          /* Drag & drop: files between folders */
+          el.draggable = true;
+          el.addEventListener("dragstart", function (ev) {
+            ev.dataTransfer.setData("text/plain", state.current + "/" + name);
+            ev.dataTransfer.effectAllowed = "move";
+            el.style.opacity = "0.5";
+          });
+          el.addEventListener("dragend", function () { el.style.opacity = ""; });
+
           el.addEventListener("dblclick", () => {
             if (child.type === "dir") {
               goto(OS.fs.normalize(state.current + "/" + name));
@@ -168,6 +210,36 @@
               openFile(name, child);
             }
           });
+
+          if (child.type === "dir") {
+            el.addEventListener("dragover", function (ev) {
+              ev.preventDefault();
+              ev.dataTransfer.dropEffect = "move";
+              el.style.outline = "2px solid #3d7bf7";
+            });
+            el.addEventListener("dragleave", function () { el.style.outline = ""; });
+            el.addEventListener("drop", function (ev) {
+              ev.preventDefault();
+              el.style.outline = "";
+              var srcPath = ev.dataTransfer.getData("text/plain");
+              if (!srcPath || srcPath.indexOf("/") !== 0) return;
+              var destDir = OS.fs.normalize(state.current + "/" + name);
+              var srcName = srcPath.split("/").pop();
+              var destPath = destDir + "/" + srcName;
+              if (srcPath === destPath) return;
+              if (OS.fs.exists(destPath)) {
+                OS.message("Explorer", "An item named \u201C" + srcName + "\u201D already exists here.", "warn");
+                return;
+              }
+              var node = OS.fs.getNode(srcPath);
+              if (!node) return;
+              if (node.type === "dir") OS.fs.mkdir(destPath);
+              else OS.fs.writeFile(destPath, node.data || "");
+              OS.fs.remove(srcPath);
+              render();
+              OS.notify && OS.notify("Explorer", "Moved \u201C" + srcName + "\u201D to " + name);
+            });
+          }
 
           el.addEventListener("contextmenu", (e) => {
             e.preventDefault();

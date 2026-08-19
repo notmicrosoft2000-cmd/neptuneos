@@ -62,6 +62,56 @@
     beep() { this.note(880, 0.12, "square", 0.05); },
     error() { this.note(220, 0.18, "square", 0.05); },
 
+    /* Startup chime — ascending major chord arpeggio */
+    startup() {
+      if (!this.ctx) return;
+      [523, 659, 784, 1047, 1319].forEach((f, i) => this.note(f, 0.35, "triangle", 0.06, i * 0.12));
+    },
+
+    /* Shutdown — descending tones */
+    shutdown() {
+      if (!this.ctx) return;
+      [784, 659, 523, 392].forEach((f, i) => this.note(f, 0.3, "triangle", 0.05, i * 0.15));
+    },
+
+    /* Logon — cheerful ascending 3-note */
+    logon() {
+      if (!this.ctx) return;
+      [440, 554, 659].forEach((f, i) => this.note(f, 0.2, "sine", 0.05, i * 0.1));
+    },
+
+    /* Window open — soft pop */
+    windowOpen() { this.note(880, 0.08, "sine", 0.02); },
+
+    /* Window close — soft drop */
+    windowClose() { this.note(440, 0.1, "sine", 0.02); },
+
+    /* Notification ding */
+    notify() {
+      if (!this.ctx) return;
+      this.note(880, 0.15, "sine", 0.04);
+      this.note(1109, 0.15, "sine", 0.04, 0.12);
+    },
+
+    /* Delete / trash */
+    trash() { this.note(200, 0.15, "sawtooth", 0.03); },
+
+    /* File copy / move */
+    copy() { this.note(1200, 0.06, "sine", 0.025); this.note(1500, 0.06, "sine", 0.025, 0.06); },
+
+    /* Error / critical */
+    critical() {
+      if (!this.ctx) return;
+      this.note(200, 0.2, "square", 0.06);
+      this.note(150, 0.3, "square", 0.06, 0.2);
+    },
+
+    /* Minimize swoosh */
+    minimize() { this.note(660, 0.08, "sine", 0.015); this.note(440, 0.08, "sine", 0.015, 0.04); },
+
+    /* Maximize pop */
+    maximize() { this.note(440, 0.06, "sine", 0.015); this.note(660, 0.08, "sine", 0.015, 0.04); },
+
     wireClicks() {
       document.addEventListener("click", (e) => {
         if (e.target.closest(".btn, .title-btn, .desktop-icon, .window-task, .taskbar-btn, .start-program, .tool-btn, [data-k]")) {

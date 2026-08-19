@@ -1,7 +1,8 @@
 /* =========================================================
- * neptuneOS — Web Browser
+ * neptuneOS — Web Browser (multi-tab)
  * Direct-iframe browser with DuckDuckGo HTML search, URL
- * navigation, New Tab page, bookmarks, and error fallback.
+ * navigation, New Tab page, bookmarks, error fallback,
+ * and full tab management.
  * ========================================================= */
 (function () {
   "use strict";
@@ -25,19 +26,14 @@
   ];
 
   var win = null;
-  var iframe = null;
   var urlInput = null;
-  var blank = null;
-  var errorOverlay = null;
-  var errorDesc = null;
   var statusEl = null;
   var posEl = null;
-  var historyStack = [];
-  var historyIdx = -1;
-  var isHome = true;
-  var currentUrl = "";
-  var loadTimer = null;
-  var blankTimer = null;
+  var tabsBar = null;
+  var frameWrap = null;
+  var tabs = [];
+  var activeTabId = -1;
+  var nextTabId = 1;
 
   function buildNewTabHTML() {
     var linksHtml = QUICK_LINKS.map(function (l) {
@@ -109,6 +105,384 @@
     }
   }
 
+  /* ── Tab model ── */
+
+  function createTab(url) {
+    var id = nextTabId++;
+
+    var iframe = document.createElement("iframe");
+    iframe.className = "browser-iframe";
+    iframe.style.display = "none";
+    frameWrap.appendChild(iframe);
+
+    var blank = document.createElement("div");
+    blank.className = "browser-blank";
+    blank.style.display = "none";
+    frameWrap.appendChild(blank);
+
+    var errorOverlay = document.createElement("div");
+    errorOverlay.className = "browser-error";
+    errorOverlay.style.display = "none";
+    errorOverlay.innerHTML =
+      '<div class="browser-error-inner">' +
+      '<div class="browser-error-icon">&#9888;</div>' +
+      '<div class="browser-error-title">Failed to load page</div>' +
+      '<div class="browser-error-desc"></div>' +
+      '<button class="btn browser-error-btn browser-error-open-real">Open in Real Browser &rarr;</button>' +
+      '<button class="btn browser-error-back browser-error-go-back">&larr; Go Back</button>' +
+      "</div>";
+    frameWrap.appendChild(errorOverlay);
+
+    var tab = {
+      id: id,
+      title: "New Tab",
+      url: "",
+      iframe: iframe,
+      blank: blank,
+      errorOverlay: errorOverlay,
+      errorDesc: errorOverlay.querySelector(".browser-error-desc"),
+      historyStack: [],
+      historyIdx: -1,
+      isHome: true,
+      currentUrl: "",
+      loadTimer: null,
+      blankTimer: null,
+      innerFrame: null,
+    };
+
+    errorOverlay.querySelector(".browser-error-open-real").addEventListener("click", function () {
+      var u = tab.currentUrl || urlInput.value;
+      if (u && u !== "__home__") window.open(u, "_blank");
+    });
+    errorOverlay.querySelector(".browser-error-go-back").addEventListener("click", function () {
+      goBack();
+    });
+
+    iframe.addEventListener("load", function () {
+      onIframeLoad(tab);
+    });
+
+    tabs.push(tab);
+    return tab;
+  }
+
+  function removeTab(id) {
+    if (tabs.length <= 1) return;
+    var idx = -1;
+    for (var i = 0; i < tabs.length; i++) {
+      if (tabs[i].id === id) { idx = i; break; }
+    }
+    if (idx === -1) return;
+
+    var tab = tabs[idx];
+    clearTimeout(tab.loadTimer);
+    clearTimeout(tab.blankTimer);
+    tab.iframe.remove();
+    tab.blank.remove();
+    tab.errorOverlay.remove();
+    tabs.splice(idx, 1);
+
+    if (activeTabId === id) {
+      var newIdx = idx < tabs.length ? idx : tabs.length - 1;
+      switchToTab(tabs[newIdx].id);
+    } else {
+      renderTabs();
+    }
+  }
+
+  function switchToTab(id) {
+    for (var i = 0; i < tabs.length; i++) {
+      var t = tabs[i];
+      if (t.id === id) {
+        t.iframe.style.display = t.isHome ? "none" : "block";
+        t.blank.style.display = t.isHome ? "flex" : "none";
+        t.errorOverlay.style.display = "none";
+      } else {
+        t.iframe.style.display = "none";
+        t.blank.style.display = "none";
+        t.errorOverlay.style.display = "none";
+      }
+    }
+    activeTabId = id;
+    var at = getActiveTab();
+    urlInput.value = at.isHome ? "" : at.currentUrl;
+    updateButtons();
+    renderTabs();
+    updateStatus();
+  }
+
+  function getActiveTab() {
+    for (var i = 0; i < tabs.length; i++) {
+      if (tabs[i].id === activeTabId) return tabs[i];
+    }
+    return tabs[0];
+  }
+
+  function renderTabs() {
+    tabsBar.innerHTML = "";
+    for (var i = 0; i < tabs.length; i++) {
+      var t = tabs[i];
+      var tabEl = document.createElement("div");
+      tabEl.className = "browser-tab" + (t.id === activeTabId ? " active" : "");
+      tabEl.setAttribute("data-tab-id", t.id);
+
+      var label = document.createElement("span");
+      label.className = "browser-tab-label";
+      label.textContent = t.title;
+      label.title = t.title;
+      tabEl.appendChild(label);
+
+      if (tabs.length > 1) {
+        var close = document.createElement("span");
+        close.className = "browser-tab-close";
+        close.textContent = "\u00d7";
+        close.setAttribute("data-close-tab", t.id);
+        close.addEventListener("click", (function (tid) {
+          return function (e) {
+            e.stopPropagation();
+            removeTab(tid);
+          };
+        })(t.id));
+        tabEl.appendChild(close);
+      }
+
+      tabEl.addEventListener("click", (function (tid) {
+        return function () {
+          switchToTab(tid);
+        };
+      })(t.id));
+
+      tabsBar.appendChild(tabEl);
+    }
+    tabsBar.appendChild(addBtn);
+  }
+
+  function updateTabTitle(tab) {
+    tab.title = tab.isHome ? "New Tab" : (getDomain(tab.currentUrl) || "Untitled");
+    renderTabs();
+  }
+
+  function updateStatus() {
+    posEl.textContent = tabs.length > 1 ? tabs.length + " tabs" : "";
+  }
+
+  /* ── Navigation helpers ── */
+
+  function onFrameMessage(e) {
+    if (e.data && e.data.neptuneBrowserNavigate) {
+      var url = e.data.neptuneBrowserNavigate;
+      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+      navigate(url);
+    }
+  }
+
+  function onIframeLoad(tab) {
+    if (tab.isHome) return;
+    clearTimeout(tab.loadTimer);
+    clearTimeout(tab.blankTimer);
+
+    try {
+      var loc = tab.iframe.contentWindow.location.href;
+      if (loc === "about:blank" || loc === "about:srcdoc") {
+        tab.blankTimer = setTimeout(function () {
+          try {
+            var loc2 = tab.iframe.contentWindow.location.href;
+            if (loc2 === "about:blank" || loc2 === "about:srcdoc") {
+              showError(tab, tab.currentUrl, "This page could not be loaded. It may block iframe embedding. Try opening it in your real browser instead.");
+            } else {
+              statusEl.textContent = "Done";
+            }
+          } catch (e2) {
+            statusEl.textContent = "Done";
+          }
+        }, 1500);
+      } else {
+        statusEl.textContent = "Done";
+      }
+    } catch (e) {
+      statusEl.textContent = "Done";
+    }
+  }
+
+  function loadNewTabFor(tab) {
+    tab.isHome = true;
+    tab.currentUrl = "";
+    clearTimeout(tab.loadTimer);
+    clearTimeout(tab.blankTimer);
+    tab.blank.style.display = "flex";
+    tab.errorOverlay.style.display = "none";
+    tab.iframe.style.display = "none";
+    tab.iframe.src = "about:blank";
+    tab.iframe.srcdoc = "";
+    tab.blank.innerHTML = "";
+    var frame = document.createElement("iframe");
+    frame.style.cssText = "width:100%;height:100%;border:none;";
+    frame.srcdoc = NEW_TAB_HTML;
+    tab.blank.appendChild(frame);
+    tab.innerFrame = frame;
+    pushHistory(tab, "__home__");
+    updateTabTitle(tab);
+  }
+
+  function navigateFromBar() {
+    var at = getActiveTab();
+    var raw = urlInput.value.trim();
+    if (!raw) return;
+    if (raw === "__home__" || raw.toLowerCase() === "home") {
+      loadNewTabFor(at);
+      updateButtons();
+      if (at.id === activeTabId) urlInput.value = "";
+      return;
+    }
+    if (!/^https?:\/\//i.test(raw)) {
+      if (isLikelyURL(raw)) {
+        raw = "https://" + raw;
+      } else {
+        raw = DDG_HTML + "?q=" + encodeURIComponent(raw);
+      }
+    }
+    navigate(raw);
+  }
+
+  function navigate(url) {
+    if (!url) return;
+    var at = getActiveTab();
+    if (!/^https?:\/\//i.test(url)) {
+      if (isLikelyURL(url)) {
+        url = "https://" + url;
+      } else {
+        url = DDG_HTML + "?q=" + encodeURIComponent(url);
+      }
+    }
+    at.isHome = false;
+    at.currentUrl = url;
+    clearTimeout(at.loadTimer);
+    clearTimeout(at.blankTimer);
+    at.blank.style.display = "none";
+    at.errorOverlay.style.display = "none";
+    at.iframe.style.display = "block";
+    at.iframe.srcdoc = "";
+    at.iframe.src = url;
+
+    var domain = getDomain(url);
+    urlInput.value = url;
+    win.setTitle(OS.esc(domain) + " \u2014 Browser");
+    statusEl.textContent = "Loading " + domain + "...";
+
+    pushHistory(at, url);
+    updateTabTitle(at);
+    updateButtons();
+
+    at.loadTimer = setTimeout(function () {
+      try {
+        var loc = at.iframe.contentWindow.location.href;
+        if (loc === "about:blank" || loc === "about:srcdoc") {
+          showError(at, url, "This page took too long to respond or could not be loaded.");
+        } else {
+          statusEl.textContent = "Done";
+        }
+      } catch (e) {
+        statusEl.textContent = "Done";
+      }
+    }, 10000);
+  }
+
+  function showError(tab, url, desc) {
+    var domain = getDomain(url);
+    tab.errorOverlay.style.display = "flex";
+    tab.iframe.style.display = "none";
+    tab.blank.style.display = "none";
+    tab.errorDesc.textContent = desc || "The page could not be loaded.";
+    if (tab.id === activeTabId) {
+      win.setTitle(OS.esc(domain) + " \u2014 Browser");
+      statusEl.textContent = "Error";
+    }
+    clearTimeout(tab.loadTimer);
+    clearTimeout(tab.blankTimer);
+  }
+
+  function openExternal() {
+    var url = urlInput.value;
+    if (url && url !== "__home__") window.open(url, "_blank");
+  }
+
+  function goBack() {
+    var at = getActiveTab();
+    if (at.historyIdx > 0) {
+      at.historyIdx--;
+      var entry = at.historyStack[at.historyIdx];
+      if (entry === "__home__") {
+        loadNewTabFor(at);
+        if (at.id === activeTabId) { urlInput.value = ""; updateButtons(); }
+        updateTabTitle(at);
+        return;
+      }
+      navigate(entry);
+    }
+  }
+
+  function goForward() {
+    var at = getActiveTab();
+    if (at.historyIdx < at.historyStack.length - 1) {
+      at.historyIdx++;
+      var entry = at.historyStack[at.historyIdx];
+      if (entry === "__home__") {
+        loadNewTabFor(at);
+        if (at.id === activeTabId) { urlInput.value = ""; updateButtons(); }
+        updateTabTitle(at);
+        return;
+      }
+      navigate(entry);
+    }
+  }
+
+  function refreshPage() {
+    var at = getActiveTab();
+    if (at.isHome) {
+      loadNewTabFor(at);
+      updateTabTitle(at);
+      return;
+    }
+    if (at.currentUrl) {
+      statusEl.textContent = "Refreshing...";
+      var url = at.currentUrl;
+      at.currentUrl = "";
+      at.iframe.src = "about:blank";
+      setTimeout(function () {
+        navigate(url);
+      }, 50);
+    }
+  }
+
+  function pushHistory(tab, entry) {
+    if (tab.historyIdx < tab.historyStack.length - 1) {
+      tab.historyStack = tab.historyStack.slice(0, tab.historyIdx + 1);
+    }
+    tab.historyStack.push(entry);
+    tab.historyIdx = tab.historyStack.length - 1;
+  }
+
+  function updateButtons() {
+    var at = getActiveTab();
+    var back = win.content.querySelector('[data-nav="back"]');
+    var fwd = win.content.querySelector('[data-nav="forward"]');
+    if (back) back.disabled = at.historyIdx <= 0;
+    if (fwd) fwd.disabled = at.historyIdx >= at.historyStack.length - 1;
+    posEl.textContent = tabs.length > 1 ? tabs.length + " tabs" : "";
+  }
+
+  function newTab() {
+    var tab = createTab();
+    loadNewTabFor(tab);
+    switchToTab(tab.id);
+    urlInput.focus();
+  }
+
+  /* ── Add button reference ── */
+  var addBtn = null;
+
+  /* ── App definition ── */
+
   var app = {
     id: "browser",
     name: "Browser",
@@ -118,8 +492,9 @@
     launch: function (opts) {
       if (win && !win.el.isConnected) {
         win = null;
-        historyStack = [];
-        historyIdx = -1;
+        tabs = [];
+        activeTabId = -1;
+        nextTabId = 1;
       }
       if (win) {
         win.restore();
@@ -136,15 +511,21 @@
         height: 500,
         app: "browser",
         onClose: function () {
+          for (var i = 0; i < tabs.length; i++) {
+            clearTimeout(tabs[i].loadTimer);
+            clearTimeout(tabs[i].blankTimer);
+          }
           win = null;
-          iframe = null;
+          tabs = [];
+          activeTabId = -1;
+          nextTabId = 1;
           window.removeEventListener("message", onFrameMessage);
-          clearTimeout(loadTimer);
-          clearTimeout(blankTimer);
+          window.removeEventListener("keydown", onKeyDown);
         },
       });
 
       win.content.innerHTML =
+        '<div class="browser-tabs" id="browser-tabs"></div>' +
         '<div class="browser-toolbar">' +
         '  <button class="btn browser-nav-btn" data-nav="back" title="Back">&larr;</button>' +
         '  <button class="btn browser-nav-btn" data-nav="forward" title="Forward">&rarr;</button>' +
@@ -152,32 +533,23 @@
         '  <button class="btn browser-nav-btn" data-nav="home" title="Home">&#8962;</button>' +
         '  <input type="text" class="browser-url" id="browser-url" value="" placeholder="Enter URL or search...">' +
         '  <button class="btn browser-go" data-nav="go">Go</button>' +
-        '  <button class="btn browser-nav-btn" data-nav="newtab" title="New Tab">&#43;</button>' +
         '  <button class="btn browser-open-external" data-nav="external" title="Open in real browser">&#8599;</button>' +
         "</div>" +
         '<div class="browser-bookmarks" id="browser-bookmarks"></div>' +
-        '<div class="browser-frame-wrap">' +
-        '  <iframe class="browser-iframe" id="browser-iframe"></iframe>' +
-        '  <div class="browser-blank" id="browser-blank"></div>' +
-        '  <div class="browser-error" id="browser-error" style="display:none;">' +
-        '    <div class="browser-error-inner">' +
-        '      <div class="browser-error-icon">&#9888;</div>' +
-        '      <div class="browser-error-title" id="browser-error-title">Failed to load page</div>' +
-        '      <div class="browser-error-desc" id="browser-error-desc">The page could not be loaded.</div>' +
-        '      <button class="btn browser-error-btn" id="browser-open-real">Open in Real Browser &rarr;</button>' +
-        '      <button class="btn browser-error-back" id="browser-error-back">&larr; Go Back</button>' +
-        '    </div>' +
-        "  </div>" +
-        "</div>" +
+        '<div class="browser-frame-wrap" id="browser-frame-wrap"></div>' +
         '<div class="app-statusbar"><span id="browser-status">Ready</span><span id="browser-pos"></span></div>';
 
-      iframe = win.content.querySelector("#browser-iframe");
+      tabsBar = win.content.querySelector("#browser-tabs");
       urlInput = win.content.querySelector("#browser-url");
-      blank = win.content.querySelector("#browser-blank");
-      errorOverlay = win.content.querySelector("#browser-error");
-      errorDesc = win.content.querySelector("#browser-error-desc");
       statusEl = win.content.querySelector("#browser-status");
       posEl = win.content.querySelector("#browser-pos");
+      frameWrap = win.content.querySelector("#browser-frame-wrap");
+
+      addBtn = document.createElement("button");
+      addBtn.className = "browser-tab-add";
+      addBtn.textContent = "+";
+      addBtn.title = "New Tab (Ctrl+T)";
+      addBtn.addEventListener("click", newTab);
 
       var bmBar = win.content.querySelector("#browser-bookmarks");
       BOOKMARKS.forEach(function (bm) {
@@ -186,7 +558,7 @@
         btn.textContent = bm.label;
         btn.addEventListener("click", function () {
           if (bm.url === "__home__") {
-            loadNewTab();
+            newTab();
             return;
           }
           navigate(bm.url);
@@ -200,8 +572,7 @@
           if (action === "back") goBack();
           else if (action === "forward") goForward();
           else if (action === "refresh") refreshPage();
-          else if (action === "home") loadNewTab();
-          else if (action === "newtab") loadNewTab();
+          else if (action === "home") newTab();
           else if (action === "go") navigateFromBar();
           else if (action === "external") openExternal();
         });
@@ -211,210 +582,28 @@
         if (e.key === "Enter") navigateFromBar();
       });
 
-      win.content.querySelector("#browser-open-real").addEventListener("click", openExternal);
-      win.content.querySelector("#browser-error-back").addEventListener("click", goBack);
-
       window.addEventListener("message", onFrameMessage);
+      window.addEventListener("keydown", onKeyDown);
 
-      iframe.addEventListener("load", onIframeLoad);
+      function onKeyDown(e) {
+        if (!win || !win.el.isConnected) return;
+        if ((e.ctrlKey || e.metaKey) && e.key === "t") {
+          e.preventDefault();
+          newTab();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === "w") {
+          e.preventDefault();
+          if (tabs.length > 1) removeTab(activeTabId);
+        }
+      }
 
       if (startUrl) {
+        var tab = createTab();
+        switchToTab(tab.id);
         navigate(startUrl);
       } else {
-        loadNewTab();
-      }
-      updateButtons();
-
-      /* ── Internal functions ── */
-
-      function onFrameMessage(e) {
-        if (e.data && e.data.neptuneBrowserNavigate) {
-          var url = e.data.neptuneBrowserNavigate;
-          if (!/^https?:\/\//i.test(url)) url = "https://" + url;
-          navigate(url);
-        }
-      }
-
-      function onIframeLoad() {
-        if (isHome) return;
-        clearTimeout(loadTimer);
-        clearTimeout(blankTimer);
-
-        try {
-          var loc = iframe.contentWindow.location.href;
-          if (loc === "about:blank" || loc === "about:srcdoc") {
-            blankTimer = setTimeout(function () {
-              try {
-                var loc2 = iframe.contentWindow.location.href;
-                if (loc2 === "about:blank" || loc2 === "about:srcdoc") {
-                  showError(currentUrl, "This page could not be loaded. It may block iframe embedding. Try opening it in your real browser instead.");
-                } else {
-                  statusEl.textContent = "Done";
-                }
-              } catch (e2) {
-                statusEl.textContent = "Done";
-              }
-            }, 1500);
-          } else {
-            statusEl.textContent = "Done";
-          }
-        } catch (e) {
-          statusEl.textContent = "Done";
-        }
-      }
-
-      function loadNewTab() {
-        isHome = true;
-        currentUrl = "";
-        clearTimeout(loadTimer);
-        clearTimeout(blankTimer);
-        blank.style.display = "flex";
-        errorOverlay.style.display = "none";
-        iframe.style.display = "none";
-        iframe.src = "about:blank";
-        iframe.srcdoc = "";
-        blank.innerHTML = "";
-        var frame = document.createElement("iframe");
-        frame.style.cssText = "width:100%;height:100%;border:none;";
-        frame.srcdoc = NEW_TAB_HTML;
-        blank.appendChild(frame);
-        urlInput.value = "";
-        win.setTitle("Browser");
-        statusEl.textContent = "Ready";
-        pushHistory("__home__");
-        updateButtons();
-      }
-
-      function navigateFromBar() {
-        var raw = urlInput.value.trim();
-        if (!raw) return;
-        if (raw === "__home__" || raw.toLowerCase() === "home") {
-          loadNewTab();
-          return;
-        }
-        if (!/^https?:\/\//i.test(raw)) {
-          if (isLikelyURL(raw)) {
-            raw = "https://" + raw;
-          } else {
-            raw = DDG_HTML + "?q=" + encodeURIComponent(raw);
-          }
-        }
-        navigate(raw);
-      }
-
-      function navigate(url) {
-        if (!url) return;
-        if (!/^https?:\/\//i.test(url)) {
-          if (isLikelyURL(url)) {
-            url = "https://" + url;
-          } else {
-            url = DDG_HTML + "?q=" + encodeURIComponent(url);
-          }
-        }
-        isHome = false;
-        currentUrl = url;
-        clearTimeout(loadTimer);
-        clearTimeout(blankTimer);
-        blank.style.display = "none";
-        errorOverlay.style.display = "none";
-        iframe.style.display = "block";
-        iframe.srcdoc = "";
-        iframe.src = url;
-
-        var domain = getDomain(url);
-        urlInput.value = url;
-        win.setTitle(OS.esc(domain) + " \u2014 Browser");
-        statusEl.textContent = "Loading " + domain + "...";
-
-        pushHistory(url);
-        updateButtons();
-
-        loadTimer = setTimeout(function () {
-          try {
-            var loc = iframe.contentWindow.location.href;
-            if (loc === "about:blank" || loc === "about:srcdoc") {
-              showError(url, "This page took too long to respond or could not be loaded.");
-            } else {
-              statusEl.textContent = "Done";
-            }
-          } catch (e) {
-            statusEl.textContent = "Done";
-          }
-        }, 10000);
-      }
-
-      function showError(url, desc) {
-        var domain = getDomain(url);
-        errorOverlay.style.display = "flex";
-        iframe.style.display = "none";
-        blank.style.display = "none";
-        errorDesc.textContent = desc || "The page could not be loaded.";
-        win.setTitle(OS.esc(domain) + " \u2014 Browser");
-        statusEl.textContent = "Error";
-        clearTimeout(loadTimer);
-        clearTimeout(blankTimer);
-      }
-
-      function openExternal() {
-        var url = urlInput.value;
-        if (url && url !== "__home__") window.open(url, "_blank");
-      }
-
-      function goBack() {
-        if (historyIdx > 0) {
-          historyIdx--;
-          var entry = historyStack[historyIdx];
-          if (entry === "__home__") {
-            loadNewTab();
-            return;
-          }
-          navigate(entry);
-        }
-      }
-
-      function goForward() {
-        if (historyIdx < historyStack.length - 1) {
-          historyIdx++;
-          var entry = historyStack[historyIdx];
-          if (entry === "__home__") {
-            loadNewTab();
-            return;
-          }
-          navigate(entry);
-        }
-      }
-
-      function refreshPage() {
-        if (isHome) {
-          loadNewTab();
-          return;
-        }
-        if (currentUrl) {
-          statusEl.textContent = "Refreshing...";
-          var url = currentUrl;
-          currentUrl = "";
-          iframe.src = "about:blank";
-          setTimeout(function () {
-            navigate(url);
-          }, 50);
-        }
-      }
-
-      function pushHistory(entry) {
-        if (historyIdx < historyStack.length - 1) {
-          historyStack = historyStack.slice(0, historyIdx + 1);
-        }
-        historyStack.push(entry);
-        historyIdx = historyStack.length - 1;
-      }
-
-      function updateButtons() {
-        var back = win.content.querySelector('[data-nav="back"]');
-        var fwd = win.content.querySelector('[data-nav="forward"]');
-        if (back) back.disabled = historyIdx <= 0;
-        if (fwd) fwd.disabled = historyIdx >= historyStack.length - 1;
-        posEl.textContent =
-          historyStack.length > 1 ? historyIdx + 1 + "/" + historyStack.length : "";
+        var firstTab = createTab();
+        loadNewTabFor(firstTab);
+        switchToTab(firstTab.id);
       }
     },
   };

@@ -121,6 +121,7 @@
           if (this.app && OS.apps[this.app] && OS.apps[this.app].onWindowClose) {
             OS.apps[this.app].onWindowClose(this);
           }
+          if (OS.sfx && typeof OS.sfx.windowClose === "function") OS.sfx.windowClose();
           el.classList.add("window-closing");
           let cleaned = false;
           const cleanup = () => {
@@ -149,6 +150,7 @@
       wm.windows.push(win);
       OS.taskbar.addButton(win);
       this.focus(win);
+      if (OS.sfx && typeof OS.sfx.windowOpen === "function") OS.sfx.windowOpen();
 
       el.classList.add("window-opening");
       el.addEventListener("animationend", function onOpen() {
@@ -191,6 +193,11 @@
         ny = Math.max(0, Math.min(ny, layer.clientHeight - 30));
         win.el.style.left = nx + "px";
         win.el.style.top = ny + "px";
+
+        /* Window snap hints */
+        const snapSide = getSnapSide(e.clientX, e.clientY);
+        if (snapSide) showSnapHint(snapSide);
+        else hideSnapHint();
       };
 
       titlebar.addEventListener("mousedown", (e) => {
@@ -199,7 +206,11 @@
         dragging = { ox: e.clientX - win.el.offsetLeft, oy: e.clientY - win.el.offsetTop };
         win.focus();
         document.body.classList.add("dragging");
-        const up = () => {
+        const up = (e2) => {
+          /* Apply snap on mouse up */
+          const snapSide = getSnapSide(e2.clientX, e2.clientY);
+          if (snapSide) applySnap(win, snapSide);
+          hideSnapHint();
           dragging = null;
           document.body.classList.remove("dragging");
           window.removeEventListener("mousemove", move);
@@ -360,8 +371,143 @@
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  /* Global keyboard: Alt+F4 closes the focused window */
+  /* Global keyboard: Alt+F4 closes the focused window, Alt+Tab switches windows */
+  const altTabState = { active: false, index: 0, overlay: null };
+
+  function buildAltTabOverlay() {
+    if (altTabState.overlay) return altTabState.overlay;
+    const ov = document.createElement("div");
+    ov.id = "alt-tab-overlay";
+    ov.style.cssText =
+      "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);display:none;" +
+      "align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);";
+    ov.innerHTML = '<div id="alt-tab-grid"></div>';
+    document.body.appendChild(ov);
+    altTabState.overlay = ov;
+    return ov;
+  }
+
+  function showAltTab() {
+    const visible = wm.windows.filter((w) => w.el.style.display !== "none");
+    if (visible.length < 2) return;
+    altTabState.active = true;
+    altTabState.index = (wm.windows.indexOf(wm.active) + 1) % wm.windows.length;
+    const ov = buildAltTabOverlay();
+    const grid = ov.querySelector("#alt-tab-grid");
+    grid.innerHTML = "";
+    grid.style.cssText =
+      "display:flex;flex-wrap:wrap;gap:8px;padding:16px;max-width:80vw;justify-content:center;";
+    wm.windows.forEach((w, i) => {
+      const card = document.createElement("div");
+      card.style.cssText =
+        "width:180px;height:120px;background:#ece9d8;border:2px solid " + (i === altTabState.index ? "#316ac5" : "#808080") +
+        ";border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;" +
+        "cursor:pointer;transition:border-color 0.1s,transform 0.1s;font-size:11px;text-align:center;padding:8px;" +
+        (i === altTabState.index ? "transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.4);" : "");
+      const iconSrc = w.el.querySelector(".window-title-icon")?.src || "";
+      if (iconSrc) {
+        card.innerHTML += '<img src="' + iconSrc + '" style="width:28px;height:28px;margin-bottom:6px;" alt="">';
+      }
+      card.innerHTML += '<div style="font-weight:bold;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;">' +
+        OS.esc(w.title) + '</div>';
+      card.addEventListener("click", () => {
+        w.restore();
+        w.focus();
+        hideAltTab();
+      });
+      grid.appendChild(card);
+    });
+    ov.style.display = "flex";
+  }
+
+  function hideAltTab() {
+    altTabState.active = false;
+    if (altTabState.overlay) altTabState.overlay.style.display = "none";
+  }
+
+  function cycleAltTab(reverse) {
+    if (!altTabState.active) return;
+    const len = wm.windows.length;
+    altTabState.index = (altTabState.index + (reverse ? -1 : 1) + len) % len;
+    const grid = altTabState.overlay.querySelector("#alt-tab-grid");
+    const cards = grid.children;
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      const isActive = i === altTabState.index;
+      c.style.borderColor = isActive ? "#316ac5" : "#808080";
+      c.style.transform = isActive ? "scale(1.05)" : "scale(1)";
+      c.style.boxShadow = isActive ? "0 4px 12px rgba(0,0,0,0.4)" : "none";
+    }
+  }
+
+  /* Window Snap */
+  const SNAP_THRESHOLD = 20;
+  let snapOverlay = null;
+  let dragState = null;
+
+  function getSnapOverlay() {
+    if (!snapOverlay) {
+      snapOverlay = document.createElement("div");
+      snapOverlay.id = "snap-overlay";
+      snapOverlay.style.cssText =
+        "position:fixed;z-index:950;border:3px solid #316ac5;background:rgba(49,106,197,0.2);" +
+        "border-radius:8px;display:none;pointer-events:none;transition:all 0.15s ease-out;";
+      document.body.appendChild(snapOverlay);
+    }
+    return snapOverlay;
+  }
+
+  function showSnapHint(side) {
+    const ov = getSnapOverlay();
+    const vw = window.innerWidth, vh = window.innerHeight - 30;
+    let x, y, w, h;
+    if (side === "left") { x = 0; y = 0; w = vw / 2; h = vh; }
+    else if (side === "right") { x = vw / 2; y = 0; w = vw / 2; h = vh; }
+    else if (side === "top") { x = 0; y = 0; w = vw; h = vh; }
+    else { hideSnapHint(); return; }
+    ov.style.left = x + "px";
+    ov.style.top = y + "px";
+    ov.style.width = w + "px";
+    ov.style.height = h + "px";
+    ov.style.display = "block";
+  }
+
+  function hideSnapHint() {
+    if (snapOverlay) snapOverlay.style.display = "none";
+  }
+
+  function getSnapSide(clientX, clientY) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (clientX <= SNAP_THRESHOLD) return "left";
+    if (clientX >= vw - SNAP_THRESHOLD) return "right";
+    if (clientY <= SNAP_THRESHOLD) return "top";
+    return null;
+  }
+
+  function applySnap(win, side) {
+    const vw = window.innerWidth, vh = window.innerHeight - 30;
+    if (!win.restoreRect) {
+      win.restoreRect = { x: win.el.offsetLeft, y: win.el.offsetTop, w: win.el.offsetWidth, h: win.el.offsetHeight };
+    }
+    win.el.classList.add("no-transition");
+    if (side === "left") {
+      win.el.style.left = "0px"; win.el.style.top = "0px";
+      win.el.style.width = "50%"; win.el.style.height = vh + "px";
+    } else if (side === "right") {
+      win.el.style.left = "50%"; win.el.style.top = "0px";
+      win.el.style.width = "50%"; win.el.style.height = vh + "px";
+    } else if (side === "top") {
+      win.maximize();
+      hideSnapHint();
+      return;
+    }
+    win.maximized = false;
+    win.el.classList.remove("no-transition");
+    win.focus();
+  }
+
   window.addEventListener("keydown", (e) => {
+    /* Alt+F4 */
     if (e.altKey && e.key === "F4") {
       e.preventDefault();
       if (document.activeElement && document.activeElement.tagName === "INPUT") {
@@ -369,6 +515,37 @@
       }
       wm.closeActive();
     }
+    /* Alt+Tab / Alt+Shift+Tab */
+    if (e.altKey && e.key === "Tab") {
+      e.preventDefault();
+      if (!altTabState.active) {
+        showAltTab();
+      } else {
+        cycleAltTab(e.shiftKey);
+      }
+    }
+    /* Escape to close Alt+Tab */
+    if (e.key === "Escape" && altTabState.active) {
+      e.preventDefault();
+      hideAltTab();
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (e.key === "Alt" && altTabState.active) {
+      const idx = altTabState.index;
+      hideAltTab();
+      const target = wm.windows[idx];
+      if (target) {
+        target.restore();
+        target.focus();
+      }
+    }
+  });
+
+  /* Prevent Alt key from getting stuck */
+  window.addEventListener("blur", () => {
+    if (altTabState.active) hideAltTab();
   });
 
   window.OS = window.OS || {};

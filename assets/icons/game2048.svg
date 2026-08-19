@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="6" fill="#faf8ef"/>
+  <rect x="4" y="4" width="10" height="10" rx="2" fill="#eee4da"/>
+  <rect x="14" y="4" width="10" height="10" rx="2" fill="#ede0c8"/>
+  <text x="9" y="12" font-size="8" font-weight="bold" fill="#776e65" text-anchor="middle" font-family="Arial">2</text>
+  <text x="19" y="12" font-size="8" font-weight="bold" fill="#776e65" text-anchor="middle" font-family="Arial">4</text>
+  <rect x="24" y="4" width="10" height="10" rx="2" fill="#f2b179"/>
+  <text x="29" y="12" font-size="8" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">8</text>
+  <rect x="4" y="14" width="10" height="10" rx="2" fill="#f59563"/>
+  <text x="9" y="22" font-size="7" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">16</text>
+  <rect x="14" y="14" width="10" height="10" rx="2" fill="#f67c5f"/>
+  <text x="19" y="22" font-size="7" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">32</text>
+  <rect x="4" y="24" width="10" height="10" rx="2" fill="#edcf72"/>
+  <text x="9" y="32" font-size="7" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">64</text>
+  <rect x="24" y="14" width="10" height="10" rx="2" fill="#edc22e"/>
+  <text x="29" y="22" font-size="6" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">128</text>
+  <rect x="14" y="24" width="10" height="10" rx="2" fill="#edc53f"/>
+  <text x="19" y="32" font-size="6" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">256</text>
+  <rect x="24" y="24" width="10" height="10" rx="2" fill="#edc850"/>
+  <text x="29" y="32" font-size="6" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">512</text>
+  <rect x="4" y="34" width="10" height="10" rx="2" fill="#3c3a32"/>
+  <text x="9" y="42" font-size="6" font-weight="bold" fill="#f9f6f2" text-anchor="middle" font-family="Arial">1024</text>
+  <rect x="14" y="34" width="10" height="10" rx="2" fill="#3c3a32"/>
+  <text x="19" y="42" font-size="6" font-weight="bold" fill="#edc22e" text-anchor="middle" font-family="Arial">2048</text>
+  <rect x="34" y="4" width="10" height="10" rx="2" fill="#eee4da"/>
+  <rect x="34" y="14" width="10" height="10" rx="2" fill="#eee4da"/>
+  <rect x="34" y="24" width="10" height="10" rx="2" fill="#eee4da"/>
+  <rect x="24" y="34" width="10" height="10" rx="2" fill="#eee4da"/>
+  <rect x="34" y="34" width="10" height="10" rx="2" fill="#eee4da"/>
+</svg>

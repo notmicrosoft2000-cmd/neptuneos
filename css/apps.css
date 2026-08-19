@@ -260,8 +260,8 @@
   font-weight: bold;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
+
 .player-side { flex: 1; display: flex; flex-direction: column; margin: 3px; min-height: 0; }
 .player-playlist {
   flex: 1;
@@ -879,3 +879,46 @@ body.tablet-mode .resize-handle { min-width: 12px; min-height: 12px; }
   white-space: nowrap;
   overflow: hidden;
 }
+
+/* ===== Neptune Mail ===== */
+.email-folder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s, color 0.1s;
+}
+.email-folder:hover { background: #e8f0fc; }
+.email-folder.sel { background: var(--highlight); color: #fff; }
+.email-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  border-bottom: 1px solid #eee;
+  transition: background 0.1s;
+}
+.email-row:hover { background: #e8f0fc; }
+.email-row.sel { background: var(--highlight); color: #fff; }
+.email-row.unread .email-from,
+.email-row.unread .email-subject { font-weight: bold; }
+.email-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-from { width: 140px; flex-shrink: 0; }
+.email-subject { flex: 1; min-width: 0; }
+.email-date { width: 90px; flex-shrink: 0; text-align: right; color: var(--text-dim); font-size: 11px; }
+.email-row.sel .email-date { color: #cfe0ff; }
+.email-preview-body { font-size: 12px; line-height: 1.5; }
+
+/* Browser tabs */
+.browser-tabs { display: flex; align-items: center; gap: 1px; padding: 3px 3px 0; background: var(--face); border-bottom: 1px solid var(--face-dark); overflow-x: auto; flex-shrink: 0; }
+.browser-tabs::-webkit-scrollbar { height: 0; }
+.browser-tab { display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer; background: #d4d0c8; border: 1px solid #aca899; border-bottom: none; border-radius: 4px 4px 0 0; max-width: 160px; min-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 0.1s; flex-shrink: 0; }
+.browser-tab:hover { background: #e8e4dc; }
+.browser-tab.active { background: #fff; border-bottom: 1px solid #fff; margin-bottom: -1px; font-weight: bold; }
+.browser-tab-close { font-size: 12px; color: #888; cursor: pointer; padding: 0 2px; border-radius: 2px; flex-shrink: 0; }
+.browser-tab-close:hover { background: #ff6b6b; color: #fff; }
+.browser-tab-add { padding: 4px 8px; font-size: 14px; cursor: pointer; color: #555; border-radius: 4px 0 0 0; flex-shrink: 0; background: none; border: none; }
+.browser-tab-add:hover { background: #e8e4dc; }

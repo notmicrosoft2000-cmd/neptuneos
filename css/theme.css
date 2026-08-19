@@ -95,18 +95,6 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
 }
 
 /* ===== Scrollbars (XP style) ===== */
-::-webkit-scrollbar { width: 17px; height: 17px; }
-::-webkit-scrollbar-track { background: #f0f0f0; }
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #d4d0c8 0%, #ecebe5 100%);
-  border: 1px solid #aca899;
-  border-radius: 2px;
-  box-shadow: 1px 1px 0 #fff inset;
-  transition: background 0.15s;
-}
-::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #b8d4f5 0%, #d8ecff 100%); }
-::-webkit-scrollbar-corner { background: #f0f0f0; }
-::-webkit-scrollbar-button { display: none; }
 
 /* ===== Desktop default wallpaper (Bliss) ===== */
 #wallpaper {
@@ -124,6 +112,52 @@ body.touch-device input,
 body.touch-device textarea,
 body.touch-device [contenteditable] {
   cursor: text !important;
+}
+
+/* ===== Better resize cursors ===== */
+body.resizing { cursor: default !important; }
+body.resizing * { cursor: inherit !important; }
+.resize-n  { cursor: n-resize !important; }
+.resize-s  { cursor: s-resize !important; }
+.resize-e  { cursor: e-resize !important; }
+.resize-w  { cursor: w-resize !important; }
+.resize-ne { cursor: ne-resize !important; }
+.resize-nw { cursor: nw-resize !important; }
+.resize-se { cursor: se-resize !important; }
+.resize-sw { cursor: sw-resize !important; }
+
+/* ===== Momentum / flickable scrollbars ===== */
+* {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+*::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #d4d0c8 0%, #ecebe5 100%);
+  border: 1px solid #aca899;
+  border-radius: 2px;
+  box-shadow: 1px 1px 0 #fff inset;
+  transition: background 0.15s;
+}
+*::-webkit-scrollbar-thumb:hover { background: linear-gradient(90deg, #b8d4f5 0%, #d8ecff 100%); }
+*::-webkit-scrollbar-corner { background: #f0f0f0; }
+*::-webkit-scrollbar-button { display: none; }
+
+/* Touch-friendly scroll hint */
+.touch-device .explorer-files,
+.touch-device .terminal,
+.touch-device .notepad-area,
+.touch-device .player-playlist {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* ===== Tablet mode start button ===== */

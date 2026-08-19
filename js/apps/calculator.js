@@ -46,11 +46,14 @@
         '    <button class="btn" data-k="0">0</button>' +
         '    <button class="btn" data-k=".">.</button>' +
         '    <button class="btn" data-k="=">=</button>' +
-        "  </div>" +
+        '  </div>' +
+        '  <div class="calc-history" id="calc-history" style="max-height:80px;overflow-y:auto;border-top:1px solid var(--face-dark);margin-top:6px;padding:4px;font-size:11px;color:var(--text-dim);"></div>' +
         "</div>";
 
       const display = win.content.querySelector("#calc-display");
+      const historyEl = win.content.querySelector("#calc-history");
       const state = { acc: null, op: null, entry: "0", fresh: true };
+      const calcHistory = [];
 
       const apply = (a, b, op) => {
         a = Number(a); b = Number(b);
@@ -100,6 +103,10 @@
         } else if (key === "=") {
           if (state.op !== null) {
             const result = apply(state.acc, state.entry, state.op);
+            const expr = fmt(state.acc) + " " + key + " " + fmt(state.entry) + " = " + fmt(result);
+            calcHistory.unshift(expr);
+            if (calcHistory.length > 20) calcHistory.pop();
+            renderHistory();
             state.entry = fmt(result);
             state.acc = null;
             state.op = null;
@@ -125,6 +132,24 @@
       win.content.querySelectorAll("[data-k]").forEach((b) => {
         b.addEventListener("click", () => press(b.dataset.k));
       });
+
+      function renderHistory() {
+        historyEl.innerHTML = calcHistory.map(function (h) {
+          return '<div style="padding:1px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;" class="calc-hist-item">' + OS.esc(h) + "</div>";
+        }).join("");
+        historyEl.querySelectorAll(".calc-hist-item").forEach(function (el, i) {
+          el.addEventListener("click", function () {
+            const parts = calcHistory[i].split(" = ");
+            if (parts.length === 2) {
+              state.entry = parts[1];
+              state.fresh = true;
+              setDisplay(state.entry);
+            }
+          });
+          el.addEventListener("mouseenter", function () { el.style.background = "#e8f0fc"; });
+          el.addEventListener("mouseleave", function () { el.style.background = ""; });
+        });
+      }
 
       win.content.querySelector("#calc-about").addEventListener("click", () => OS.about("Calculator", app.icon));
 
