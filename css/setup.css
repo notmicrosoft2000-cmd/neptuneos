@@ -281,87 +281,105 @@
   min-width: 84px;
 }
 
-/* ---------- logon screen ---------- */
+/* ---------- logon / lock screen (Aero style) ---------- */
 
 #logon-screen {
   position: fixed;
   inset: 0;
   z-index: 1590;
-  background: linear-gradient(180deg, #1c5fc9 0%, #0e3a92 55%, #09295f 100%);
-  font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(135deg, #0a1628 0%, #0d2137 30%, #122d4a 60%, #0a1e36 100%);
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: hidden;
 }
-
 #logon-screen::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(70% 50% at 50% 0%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 60%);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(40,120,200,0.25) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 20% 30%, rgba(60,140,220,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 80% 60%, rgba(30,100,180,0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+#logon-screen::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%);
   pointer-events: none;
 }
 
 .logon-top {
   position: relative;
-  margin-top: 4vh;
+  margin-top: 12vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
-
 .logon-top img {
-  width: 74px;
-  height: 74px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
 }
-
 .logon-top span {
-  font-size: 34px;
+  font-size: 26px;
   color: #fff;
-  font-weight: bold;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 .logon-hint {
   position: relative;
-  margin-top: 7vh;
-  font-size: 17px;
-  color: #dceaff;
+  margin-top: 5vh;
+  font-size: 14px;
+  color: rgba(200,220,240,0.7);
+  letter-spacing: 0.3px;
 }
 
 .logon-users {
   position: relative;
-  margin-top: 22px;
+  margin-top: 18px;
 }
-
 .logon-users button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  width: 128px;
-  padding: 14px 8px;
-  background: linear-gradient(180deg, #e8f2ff 0%, #cfe2fb 100%);
-  border: 1px solid #0831d9;
-  border-radius: 6px;
+  gap: 8px;
+  width: 110px;
+  padding: 16px 8px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
-
 .logon-users button:hover {
-  outline: 2px solid #6fb3f5;
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(100,180,255,0.4);
+  transform: scale(1.03);
 }
-
 .logon-users img {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
 }
-
 .logon-users span {
   font-size: 13px;
-  font-weight: bold;
-  color: #123;
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
 .logon-password {
@@ -370,43 +388,58 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
+  color: rgba(255,255,255,0.8);
   font-size: 13px;
   flex-direction: column;
 }
-
 .logon-password label {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .logon-password input {
-  width: 160px;
-  height: 24px;
-  border: 1px solid #9db9d9;
-  padding: 2px 6px;
+  width: 180px;
+  height: 28px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  padding: 2px 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
 }
+.logon-password input:focus {
+  border-color: rgba(100,180,255,0.5);
+  background: rgba(255,255,255,0.15);
+}
+.logon-password input::placeholder { color: rgba(255,255,255,0.35); }
 
 .logon-err {
-  color: #ffd0d0;
+  color: #ff8888;
   font-size: 12px;
   text-align: center;
 }
 
 .logon-off {
   position: absolute;
-  bottom: 22px;
+  bottom: 24px;
   left: 24px;
   background: none;
-  border: none;
-  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: rgba(255,255,255,0.6);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, color 0.2s;
 }
-
 .logon-off:hover {
-  text-decoration: underline;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
 }

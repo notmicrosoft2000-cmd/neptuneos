@@ -80,6 +80,25 @@
       livesEl = win.content.querySelector("#pac-lives");
       msgEl = win.content.querySelector("#pac-msg");
 
+      /* Touch D-Pad */
+      if (OS.createDPad) {
+        OS.createDPad({
+          parent: win.content.querySelector(".game-wrap"),
+          onDir: function (dir) {
+            var map = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" };
+            if (map[dir]) onKey({ key: map[dir], preventDefault: function () {} });
+          },
+          actions: [
+            { id: "pause", label: "P" },
+            { id: "restart", label: "R" },
+          ],
+          onAction: function (a) {
+            if (a === "pause") onKey({ key: "p", preventDefault: function () {} });
+            else if (a === "restart") onKey({ key: "r", preventDefault: function () {} });
+          },
+        });
+      }
+
       resizeCanvas();
       reset();
       document.addEventListener("keydown", onKey);

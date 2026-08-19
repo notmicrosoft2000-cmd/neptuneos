@@ -139,14 +139,29 @@
 #taskbar {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  height: 30px;
+  height: 34px;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 1px 4px 0;
-  background: linear-gradient(180deg, #1e62d0 0%, #245edc 6%, #1a54c8 45%, #122d63 100%);
-  border-top: 1px solid #6aa9f2;
+  padding: 1px 6px 0;
+  background: linear-gradient(180deg,
+    rgba(60,130,220,0.78) 0%,
+    rgba(30,90,200,0.82) 30%,
+    rgba(15,60,160,0.88) 70%,
+    rgba(8,35,100,0.92) 100%);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-top: 1px solid rgba(140,190,255,0.55);
   z-index: 980;
+  overflow: hidden;
+}
+#taskbar::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 45%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.02) 100%);
+  pointer-events: none;
 }
 .taskbar-btn {
   display: flex;

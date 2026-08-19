@@ -922,3 +922,111 @@ body.tablet-mode .resize-handle { min-width: 12px; min-height: 12px; }
 .browser-tab-close:hover { background: #ff6b6b; color: #fff; }
 .browser-tab-add { padding: 4px 8px; font-size: 14px; cursor: pointer; color: #555; border-radius: 4px 0 0 0; flex-shrink: 0; background: none; border: none; }
 .browser-tab-add:hover { background: #e8e4dc; }
+
+/* ---------- Touch D-Pad ---------- */
+.game-dpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 50;
+  pointer-events: auto;
+  opacity: 0.75;
+  touch-action: none;
+}
+.dpad-row {
+  display: flex;
+  gap: 2px;
+}
+.dpad-btn {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.1s;
+}
+.dpad-btn.dpad-center {
+  background: none;
+  border: none;
+  width: 42px;
+  height: 42px;
+}
+.dpad-btn.dpad-active, .dpad-btn:active {
+  background: rgba(100,160,255,0.45);
+  border-color: rgba(100,160,255,0.6);
+}
+.dpad-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.dpad-action-btn {
+  width: 48px;
+  height: 32px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 10px;
+  font-family: Tahoma, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dpad-action-btn.dpad-active, .dpad-action-btn:active {
+  background: rgba(100,160,255,0.45);
+}
+.dpad-compact .dpad-btn {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+}
+.dpad-compact .dpad-action-btn {
+  width: 40px;
+  height: 28px;
+}
+
+/* ---------- Email Client ---------- */
+.email-wrap { display: flex; height: 100%; }
+.email-sidebar { width: 140px; background: #f0f0f0; border-right: 1px solid #ccc; padding: 8px; flex-shrink: 0; overflow-y: auto; }
+.email-sidebar-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: background 0.1s; }
+.email-sidebar-item:hover { background: #e0e8f0; }
+.email-sidebar-item.active { background: #cce0ff; font-weight: bold; }
+.email-sidebar-item .badge { background: #3a8ae0; color: #fff; border-radius: 8px; padding: 0 6px; font-size: 10px; margin-left: auto; }
+.email-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.email-toolbar { display: flex; gap: 4px; padding: 4px 8px; background: #f4f4f4; border-bottom: 1px solid #ddd; flex-shrink: 0; }
+.email-toolbar .btn { font-size: 11px; padding: 3px 10px; }
+.email-list { flex: 1; overflow-y: auto; }
+.email-item { display: flex; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 12px; transition: background 0.1s; }
+.email-item:hover { background: #f0f5ff; }
+.email-item.unread { font-weight: bold; background: #f8fbff; }
+.email-item .from { width: 120px; flex-shrink: 0; color: #333; }
+.email-item .subject { flex: 1; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.email-item .date { color: #888; font-size: 11px; flex-shrink: 0; }
+.email-detail { padding: 16px; font-size: 13px; line-height: 1.6; overflow-y: auto; flex: 1; }
+.email-compose { display: flex; flex-direction: column; padding: 12px; gap: 8px; flex: 1; }
+.email-compose input, .email-compose textarea { border: 1px solid #ccc; border-radius: 3px; padding: 4px 8px; font-family: inherit; font-size: 12px; }
+.email-compose textarea { flex: 1; min-height: 120px; resize: vertical; }
+.email-empty { display: flex; align-items: center; justify-content: center; flex: 1; color: #999; font-size: 13px; }

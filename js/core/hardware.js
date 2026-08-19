@@ -1,188 +1,226 @@
-window.OS = window.OS || {};
+/* =========================================================
+ * neptuneOS — Hardware Simulation (Real Resource Model)
+ * CPU/RAM actually affect system performance.
+ * High load → slow animations, lag spikes.
+ * Critical load → BSOD crash → NeptuneOS Recovery.
+ * ========================================================= */
+(function () {
+  "use strict";
 
-window.OS.hardware = (function () {
-  const HISTORY_LENGTH = 60;
-  const UPDATE_INTERVAL = 2000;
+  var HISTORY_LEN = 60;
+  var TICK_MS = 1500;
+  var TOTAL_RAM_KB = 640;
 
-  const BASE = {
-    cpu: 15,
-    ram: 40,
-    gpu: 5,
-    network: 2,
+  /* Base resource costs */
+  var COST = {
+    shell:      { cpu: 8,  ram: 80  },
+    perWindow:  { cpu: 2,  ram: 18  },
+    browser:    { cpu: 6,  ram: 30  },
+    game:       { cpu: 12, ram: 25  },
+    emulator:   { cpu: 15, ram: 40  },
   };
 
-  const FLUCTUATION = {
-    cpu: 5,
-    ram: 2,
-    gpu: 3,
-    network: 5,
-  };
+  var cpu = 12, ram = 80, gpu = 5, net = 2;
+  var cpuHist = [], ramHist = [];
+  var loopHandle = null;
+  var bsodActive = false;
+  var recoveryActive = false;
 
-  const PER_WINDOW = {
-    cpu: 3,
-    ram: 5,
-  };
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
-  const PER_GAME = {
-    cpu: 15,
-    gpu: 20,
-  };
-
-  const TOTAL_RAM = 640;
-
-  let cpu = BASE.cpu;
-  let ram = BASE.ram;
-  let gpu = BASE.gpu;
-  let network = BASE.network;
-
-  const cpuHistory = [];
-  const ramHistory = [];
-
-  let loopHandle = null;
-
-  function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-  }
-
-  function fluctuate(current, base, range) {
-    const next = current + (Math.random() * 2 - 1) * range;
-    return clamp(next, base - range, 100);
-  }
-
-  function countOpenWindows() {
-    if (window.OS && window.OS.windowManager) {
-      const wm = window.OS.windowManager;
-      if (typeof wm.getWindowCount === "function") {
-        return wm.getWindowCount();
-      }
-      if (wm.windows && typeof wm.windows.length === "number") {
-        return wm.windows.length;
-      }
-    }
+  function getWindowCount() {
+    if (OS.wm && OS.wm.windows) return OS.wm.windows.length;
     return 0;
   }
 
-  function countRunningGames() {
-    if (window.OS && window.OS.processManager) {
-      const pm = window.OS.processManager;
-      if (typeof pm.getGameCount === "function") {
-        return pm.getGameCount();
-      }
-    }
-    if (window.OS && window.OS.processList) {
-      let count = 0;
-      const list = window.OS.processList;
-      const names = Array.isArray(list) ? list : [];
-      for (let i = 0; i < names.length; i++) {
-        const name = names[i];
-        if (
-          typeof name === "string" &&
-          (name.indexOf("game") !== -1 ||
-            name.indexOf("Game") !== -1 ||
-            name.indexOf("tetris") !== -1 ||
-            name.indexOf("Tetris") !== -1 ||
-            name.indexOf("mine") !== -1 ||
-            name.indexOf("Mine") !== -1)
-        ) {
-          count++;
-        }
-      }
-      return count;
-    }
-    return 0;
+  function classifyWindows() {
+    var counts = { browser: 0, game: 0, emulator: 0, other: 0 };
+    if (!OS.wm || !OS.wm.windows) return counts;
+    OS.wm.windows.forEach(function (w) {
+      var app = w.app || "";
+      if (app === "browser") counts.browser++;
+      else if (["snake","pacman","tetris","minesweeper","solitaire","game2048"].indexOf(app) !== -1) counts.game++;
+      else if (app === "terminal") counts.emulator++;
+      else counts.other++;
+    });
+    return counts;
   }
 
   function update() {
-    const openWindows = countOpenWindows();
-    const runningGames = countRunningGames();
+    if (bsodActive || recoveryActive) return;
 
-    const windowPenalty = openWindows * PER_WINDOW.cpu;
-    const windowRamPenalty = openWindows * PER_WINDOW.ram;
-    const gameCpuPenalty = runningGames * PER_GAME.cpu;
-    const gameGpuPenalty = runningGames * PER_GAME.gpu;
+    var cls = classifyWindows();
+    var wc = getWindowCount();
 
-    cpu = fluctuate(BASE.cpu, 0, FLUCTUATION.cpu) + windowPenalty + gameCpuPenalty;
-    ram = fluctuate(BASE.ram, 0, FLUCTUATION.ram) + windowRamPenalty;
-    gpu = fluctuate(BASE.gpu, 0, FLUCTUATION.gpu) + gameGpuPenalty;
-    network = fluctuate(BASE.network, 0, FLUCTUATION.network);
+    var baseCpu = COST.shell.cpu;
+    var baseRam = COST.shell.ram;
 
-    cpu = clamp(Math.round(cpu * 10) / 10, 0, 100);
-    ram = clamp(Math.round(ram * 10) / 10, 0, 100);
-    gpu = clamp(Math.round(gpu * 10) / 10, 0, 100);
-    network = clamp(Math.round(network * 10) / 10, 0, 100);
+    baseCpu += cls.browser * COST.browser.cpu;
+    baseCpu += cls.game * COST.game.cpu;
+    baseCpu += cls.emulator * COST.emulator.cpu;
+    baseCpu += cls.other * COST.perWindow.cpu;
 
-    cpuHistory.push(cpu);
-    if (cpuHistory.length > HISTORY_LENGTH) {
-      cpuHistory.shift();
+    baseRam += cls.browser * COST.browser.ram;
+    baseRam += cls.game * COST.game.ram;
+    baseRam += cls.emulator * COST.emulator.ram;
+    baseRam += cls.other * COST.perWindow.ram;
+
+    /* Fluctuation */
+    var cpuNoise = (Math.random() * 6 - 3);
+    var ramNoise = (Math.random() * 4 - 2);
+
+    cpu = clamp(Math.round((baseCpu + cpuNoise) * 10) / 10, 0, 100);
+    ram = clamp(Math.round((baseRam + ramNoise) * 10) / 10, 0, 100);
+    gpu = clamp(5 + cls.game * 18 + (Math.random() * 4 - 2), 0, 100);
+    net = clamp(2 + (Math.random() * 6 - 3), 0, 100);
+
+    cpuHist.push(cpu);
+    if (cpuHist.length > HISTORY_LEN) cpuHist.shift();
+    ramHist.push(ram);
+    if (ramHist.length > HISTORY_LEN) ramHist.shift();
+
+    /* Apply perf degradation classes */
+    var body = document.body;
+    body.classList.remove("high-load", "critical-load");
+
+    if (cpu > 90 || ram > 92) {
+      body.classList.add("critical-load");
+      if (Math.random() < 0.08 && wc >= 5) triggerBSOD();
+    } else if (cpu > 72 || ram > 78) {
+      body.classList.add("high-load");
+    }
+  }
+
+  /* ---- BSOD ---- */
+  function triggerBSOD() {
+    if (bsodActive || recoveryActive) return;
+    bsodActive = true;
+    if (loopHandle) { clearInterval(loopHandle); loopHandle = null; }
+
+    var bsod = document.createElement("div");
+    bsod.id = "bsod-screen";
+    bsod.innerHTML =
+      "<h1>A problem has been detected and NeptuneOS has been shut down to prevent damage to your computer.</h1>" +
+      "<pre>STOP: 0x0000007E (0xC0000005, 0xF78D25CC, 0xC0000050, 0xC0000000)\n\n" +
+      "KERNEL_MODE_EXCEPTION_NOT_HANDLED\n\n" +
+      "If this is the first time you've seen this stop error screen,\n" +
+      "restart your computer. If this screen appears again, follow\n" +
+      "these steps:\n\n" +
+      "Check to make sure any new hardware or software is properly installed.\n" +
+      "If this is a new installation, ask your hardware or software\n" +
+      "manufacturer for any NeptuneOS updates you might need.\n\n" +
+      "If problems continue, disable or remove any newly installed hardware\n" +
+      "or software. Disable BIOS memory options such as caching or shadowing.\n" +
+      "If you need to use Safe Mode to remove or disable components, restart\n" +
+      "your computer, press F8 to select Advanced Startup Options, and then\n" +
+      "select Safe Mode.</pre>" +
+      "<div class='bsod-code'>Technical Information:\n\n" +
+      "0xF78D25CC - 0x0000007E - 0xC0000005 - KERNEL_DATA_INPAGE_ERROR</div>";
+
+    document.body.appendChild(bsod);
+
+    /* After 4 seconds, transition to recovery */
+    setTimeout(function () {
+      bsod.remove();
+      showRecovery();
+    }, 4000);
+  }
+
+  /* ---- NeptuneOS Recovery ---- */
+  function showRecovery() {
+    recoveryActive = true;
+
+    var rec = document.createElement("div");
+    rec.id = "recovery-screen";
+    rec.innerHTML =
+      "<img src='assets/icons/neptuneos.svg' style='width:64px;height:64px;opacity:0.9;' alt=''>" +
+      "<h2>NeptuneOS Recovery</h2>" +
+      "<p>Your system encountered a critical error and needs to recover.<br>" +
+      "Checking system integrity...</p>" +
+      "<div class='recovery-bar'><div class='recovery-fill' id='recovery-fill'></div></div>" +
+      "<p id='recovery-status' style='font-size:11px;color:#889;margin-top:8px;'>Initializing recovery environment...</p>";
+
+    document.body.appendChild(rec);
+
+    var fill = rec.querySelector("#recovery-fill");
+    var status = rec.querySelector("#recovery-status");
+    var pct = 0;
+
+    var steps = [
+      { p: 15, t: "Checking file system integrity..." },
+      { p: 30, t: "Scanning for corrupted system files..." },
+      { p: 45, t: "Restoring NeptuneOS kernel..." },
+      { p: 60, t: "Rebuilding process table..." },
+      { p: 75, t: "Resetting hardware simulation..." },
+      { p: 88, t: "Clearing stale window state..." },
+      { p: 100, t: "System recovered. Restarting desktop..." },
+    ];
+    var stepIdx = 0;
+
+    var recLoop = setInterval(function () {
+      if (stepIdx >= steps.length) {
+        clearInterval(recLoop);
+        setTimeout(function () {
+          rec.remove();
+          recoveryActive = false;
+          bsodActive = false;
+          restartDesktop();
+        }, 800);
+        return;
+      }
+      var s = steps[stepIdx];
+      pct = s.p;
+      fill.style.width = pct + "%";
+      status.textContent = s.t;
+      stepIdx++;
+    }, 600);
+  }
+
+  function restartDesktop() {
+    /* Close all windows */
+    if (OS.wm && OS.wm.windows) {
+      var wins = OS.wm.windows.slice();
+      wins.forEach(function (w) { try { w.close(); } catch (_) {} });
     }
 
-    ramHistory.push(ram);
-    if (ramHistory.length > HISTORY_LENGTH) {
-      ramHistory.shift();
+    /* Reset resource counters */
+    cpu = 12; ram = 80; gpu = 5; net = 2;
+    cpuHist.length = 0;
+    ramHist.length = 0;
+
+    document.body.classList.remove("high-load", "critical-load");
+
+    /* Restart main loop */
+    loopHandle = setInterval(update, TICK_MS);
+
+    /* Show a recovery notification */
+    if (OS.message) {
+      OS.message("NeptuneOS Recovery", "System recovered from a critical error. All open windows were closed to free resources.", "info");
     }
-
-    if (cpu > 80) {
-      document.body.classList.add("high-load");
-    } else {
-      document.body.classList.remove("high-load");
-    }
-  }
-
-  function getCPU() {
-    return cpu;
-  }
-
-  function getRAM() {
-    return ram;
-  }
-
-  function getGPU() {
-    return gpu;
-  }
-
-  function getNetwork() {
-    return network;
-  }
-
-  function getCPUHistory() {
-    return cpuHistory.slice();
-  }
-
-  function getRAMHistory() {
-    return ramHistory.slice();
-  }
-
-  function getTotalRAM() {
-    return "640 KB";
-  }
-
-  function getUsedRAM() {
-    const used = Math.round(TOTAL_RAM * (ram / 100));
-    return used + " KB";
   }
 
   function init() {
     update();
-    loopHandle = setInterval(update, UPDATE_INTERVAL);
+    loopHandle = setInterval(update, TICK_MS);
   }
 
   function destroy() {
-    if (loopHandle !== null) {
-      clearInterval(loopHandle);
-      loopHandle = null;
-    }
-    document.body.classList.remove("high-load");
+    if (loopHandle) { clearInterval(loopHandle); loopHandle = null; }
+    document.body.classList.remove("high-load", "critical-load");
   }
 
-  return {
-    getCPU: getCPU,
-    getRAM: getRAM,
-    getGPU: getGPU,
-    getNetwork: getNetwork,
-    getCPUHistory: getCPUHistory,
-    getRAMHistory: getRAMHistory,
-    getTotalRAM: getTotalRAM,
-    getUsedRAM: getUsedRAM,
+  window.OS = window.OS || {};
+  OS.hardware = {
+    getCPU: function () { return cpu; },
+    getRAM: function () { return ram; },
+    getGPU: function () { return gpu; },
+    getNetwork: function () { return net; },
+    getCPUHistory: function () { return cpuHist.slice(); },
+    getRAMHistory: function () { return ramHist.slice(); },
+    getTotalRAM: function () { return "640 KB"; },
+    getUsedRAM: function () { return Math.round(TOTAL_RAM_KB * (ram / 100)) + " KB"; },
+    isHighLoad: function () { return cpu > 72 || ram > 78; },
+    isCritical: function () { return cpu > 90 || ram > 92; },
     init: init,
     destroy: destroy,
   };

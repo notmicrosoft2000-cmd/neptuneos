@@ -59,7 +59,7 @@
         height: 580,
         resizable: true,
         app: "tetris",
-        onClose: () => { stop(); document.removeEventListener("keydown", onKey); win = null; },
+        onClose: () => { stop(); document.removeEventListener("keydown", onKey); if (tetrisRO) tetrisRO.disconnect(); win = null; },
       });
 
       win.content.innerHTML =
@@ -85,11 +85,36 @@
       levelEl = win.content.querySelector("#tetris-level");
       linesEl = win.content.querySelector("#tetris-lines");
 
+      /* Touch D-Pad */
+      if (OS.createDPad) {
+        OS.createDPad({
+          parent: win.content.querySelector(".game-wrap"),
+          onDir: function (dir) {
+            var map = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" };
+            if (map[dir]) onKey({ key: map[dir], preventDefault: function () {} });
+          },
+          actions: [
+            { id: "space", label: "DROP" },
+            { id: "pause", label: "P" },
+            { id: "restart", label: "R" },
+          ],
+          onAction: function (a) {
+            if (a === "space") onKey({ key: " ", preventDefault: function () {} });
+            else if (a === "pause") onKey({ key: "p", preventDefault: function () {} });
+            else if (a === "restart") onKey({ key: "r", preventDefault: function () {} });
+          },
+          compact: true,
+        });
+      }
+
       highScore = parseInt(localStorage.getItem(HS_KEY) || "0", 10);
 
       resize();
       window.addEventListener("resize", resize);
       document.addEventListener("keydown", onKey);
+
+      var tetrisRO = new ResizeObserver(() => { resize(); });
+      if (win.el) tetrisRO.observe(win.el);
 
       reset();
     },
@@ -100,17 +125,17 @@
   function resize() {
     if (!win || !canvas) return;
     const wrap = canvas.parentElement;
-    const availW = wrap.clientWidth - 116;
-    const availH = wrap.clientHeight;
-    const scaleX = Math.floor(availW / (COLS * CELL));
-    const scaleY = Math.floor(availH / (ROWS * CELL));
+    const availW = (wrap.clientWidth || 500) - 116;
+    const availH = wrap.clientHeight || 520;
+    const scaleX = availW / (COLS * CELL);
+    const scaleY = availH / (ROWS * CELL);
     const s = Math.max(1, Math.min(scaleX, scaleY));
-    const cw = COLS * CELL * s;
-    const ch = ROWS * CELL * s;
-    canvas.width = cw;
-    canvas.height = ch;
-    canvas.style.width = cw + "px";
-    canvas.style.height = ch + "px";
+    const cw = Math.floor(COLS * CELL * s);
+    const ch = Math.floor(ROWS * CELL * s);
+    if (canvas.width !== cw || canvas.height !== ch) {
+      canvas.width = cw;
+      canvas.height = ch;
+    }
     canvas._scale = s;
     draw();
   }

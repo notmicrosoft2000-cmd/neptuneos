@@ -44,7 +44,7 @@
         height: 430,
         resizable: true,
         app: "snake",
-        onClose: () => { stop(); document.removeEventListener("keydown", onKey); win = null; },
+        onClose: () => { stop(); document.removeEventListener("keydown", onKey); if (snakeRO) snakeRO.disconnect(); win = null; },
       });
 
       win.content.innerHTML =
@@ -61,11 +61,34 @@
       scoreEl = win.content.querySelector("#snake-score");
       msgEl = win.content.querySelector("#snake-msg");
 
+      /* Touch D-Pad */
+      if (OS.createDPad) {
+        OS.createDPad({
+          parent: win.content.querySelector(".game-wrap"),
+          onDir: function (dir) {
+            var map = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight" };
+            if (map[dir]) onKey({ key: map[dir], preventDefault: function () {} });
+          },
+          actions: [
+            { id: "pause", label: "P" },
+            { id: "restart", label: "R" },
+          ],
+          onAction: function (a) {
+            if (a === "pause") onKey({ key: "p", preventDefault: function () {} });
+            else if (a === "restart") onKey({ key: "r", preventDefault: function () {} });
+          },
+        });
+      }
+
       highScore = parseInt(localStorage.getItem(HS_KEY) || "0", 10);
 
       resize();
       window.addEventListener("resize", resize);
       document.addEventListener("keydown", onKey);
+
+      /* Re-scale when window container changes size (maximize/restore) */
+      var snakeRO = new ResizeObserver(() => { resize(); });
+      if (win.el) snakeRO.observe(win.el);
 
       reset();
     },
@@ -82,15 +105,15 @@
   function resize() {
     if (!win || !canvas) return;
     const wrap = canvas.parentElement;
-    const w = wrap.clientWidth;
-    const h = wrap.clientHeight;
+    const w = wrap.clientWidth || 560;
+    const h = wrap.clientHeight || 380;
     const scale = Math.max(1, Math.floor(Math.min(w / (COLS * CELL), h / (ROWS * CELL))));
     const cw = COLS * CELL * scale;
     const ch = ROWS * CELL * scale;
-    canvas.width = cw;
-    canvas.height = ch;
-    canvas.style.width = cw + "px";
-    canvas.style.height = ch + "px";
+    if (canvas.width !== cw || canvas.height !== ch) {
+      canvas.width = cw;
+      canvas.height = ch;
+    }
     canvas._scale = scale;
     draw();
   }

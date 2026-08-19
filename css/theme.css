@@ -192,3 +192,107 @@ body.resizing * { cursor: inherit !important; }
 body.tablet-mode .tablet-start-btn {
   display: flex;
 }
+
+/* ===== Performance degradation CSS ===== */
+body.high-load {
+  --anim-speed: 0.5s;
+}
+body.high-load * {
+  transition-duration: 0.5s !important;
+  animation-duration: 0.5s !important;
+}
+body.high-load .window {
+  opacity: 0.92;
+}
+body.high-load .window-titlebar::after {
+  display: none;
+}
+
+body.critical-load {
+  --anim-speed: 1s;
+}
+body.critical-load * {
+  transition-duration: 1s !important;
+  animation-duration: 1s !important;
+}
+body.critical-load .window {
+  opacity: 0.82;
+  filter: saturate(0.7);
+}
+body.critical-load #taskbar {
+  opacity: 0.7;
+}
+body.critical-load #desktop {
+  filter: saturate(0.6) brightness(0.95);
+}
+
+/* ===== BSOD / Recovery screen ===== */
+#bsod-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: #0000aa;
+  color: #fff;
+  font-family: "Lucida Console", "Courier New", monospace;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 60px;
+  line-height: 1.6;
+}
+#bsod-screen h1 {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 0 24px;
+  color: #fff;
+}
+#bsod-screen pre {
+  font-size: 13px;
+  white-space: pre-wrap;
+  margin: 0 0 20px;
+  color: #fff;
+}
+#bsod-screen .bsod-code {
+  font-size: 12px;
+  color: #aaf;
+  margin-top: 30px;
+}
+
+#recovery-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #e0e0e0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+#recovery-screen h2 {
+  font-size: 22px;
+  color: #fff;
+  font-weight: normal;
+}
+#recovery-screen p {
+  font-size: 13px;
+  color: #aab;
+  max-width: 480px;
+  text-align: center;
+  line-height: 1.5;
+}
+#recovery-screen .recovery-bar {
+  width: 320px;
+  height: 8px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 4px;
+  overflow: hidden;
+}
+#recovery-screen .recovery-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #3a8ae0, #5aa0f0);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
