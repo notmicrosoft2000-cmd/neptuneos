@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  const ACCENTS = ["#000080", "#800000", "#008000", "#800080", "#008080", "#000000", "#4444aa"];
+  const ACCENTS = ["#000080", "#800000", "#008000", "#800080", "#008080", "#000000", "#4444aa", "#c0392b", "#e67e22", "#2ecc71", "#9b59b6", "#1abc9c"];
 
   const BLOATWARE_APPS = [
     { name: "Neptune Notes", size: "6 KB", desc: "Quick note-taking app" },
@@ -65,6 +65,10 @@
       nav.forEach((n) => n.addEventListener("click", () => showPage(n.dataset.page)));
 
       function renderAppearance() {
+        const taskbarOp = localStorage.getItem("neptuneos.taskbar.opacity") || "95";
+        const cursorSize = localStorage.getItem("neptuneos.cursor.size") || "normal";
+        const animSpeed = localStorage.getItem("neptuneos.anim.speed") || "normal";
+
         let html = "<h3>Wallpaper</h3><p>Click a wallpaper to apply it.</p><div style='display:flex;flex-wrap:wrap;gap:10px;'>";
         Object.keys(OS.wallpapers).forEach((id) => {
           const wp = OS.wallpapers[id];
@@ -77,11 +81,37 @@
           html += '<div class="accent-swatch' + (getAccent() === c ? " sel" : "") + '" data-accent="' + c + '" style="background:' + c + '"></div>';
         });
         html += "</div>";
-        html += "<h3 style='margin-top:18px'>Theme</h3>";
+        html += "<h3 style='margin-top:18px'>Taskbar</h3>";
+        html += '<div class="settings-row"><label>Opacity</label>' +
+          '<input type="range" id="taskbar-opacity" min="50" max="100" value="' + taskbarOp + '" style="width:160px;">' +
+          '<span id="taskbar-opacity-val">' + taskbarOp + "%</span></div>";
+        html += "<h3 style='margin-top:18px'>Cursor</h3>";
+        html += '<div class="settings-row"><label>Size</label>' +
+          '<select class="settings-select" id="cursor-size-sel">' +
+          '<option value="small"' + (cursorSize === "small" ? " selected" : "") + ">Small</option>" +
+          '<option value="normal"' + (cursorSize === "normal" ? " selected" : "") + ">Normal</option>" +
+          '<option value="large"' + (cursorSize === "large" ? " selected" : "") + ">Large</option>" +
+          '</select></div>';
+        html += "<h3 style='margin-top:18px'>Animations</h3>";
+        html += '<div class="settings-row"><label>Speed</label>' +
+          '<select class="settings-select" id="anim-speed-sel">' +
+          '<option value="fast"' + (animSpeed === "fast" ? " selected" : "") + ">Fast</option>" +
+          '<option value="normal"' + (animSpeed === "normal" ? " selected" : "") + ">Normal</option>" +
+          '<option value="slow"' + (animSpeed === "slow" ? " selected" : "") + ">Slow</option>" +
+          '<option value="off"' + (animSpeed === "off" ? " selected" : "") + ">Off</option>" +
+          '</select></div>';
         html += '<div class="settings-row"><label>Window animations</label>' +
           '<label class="settings-check"><input type="checkbox" id="anim-toggle" ' +
           (localStorage.getItem("neptuneos.animations") !== "off" ? "checked" : "") +
           '> Enable window open/close animations</label></div>';
+        html += '<div class="settings-row"><label>Desktop icon labels</label>' +
+          '<label class="settings-check"><input type="checkbox" id="icon-labels-toggle" ' +
+          (localStorage.getItem("neptuneos.icon.labels") !== "off" ? "checked" : "") +
+          '> Show icon labels on desktop</label></div>';
+        html += '<div class="settings-row"><label>Window shadows</label>' +
+          '<label class="settings-check"><input type="checkbox" id="shadow-toggle" ' +
+          (localStorage.getItem("neptuneos.window.shadows") !== "off" ? "checked" : "") +
+          '> Enable window drop shadows</label></div>';
         body.innerHTML = html;
 
         body.querySelectorAll("[data-wp]").forEach((el) => {
@@ -100,6 +130,34 @@
         });
         body.querySelector("#anim-toggle").addEventListener("change", (e) => {
           localStorage.setItem("neptuneos.animations", e.target.checked ? "on" : "off");
+        });
+        body.querySelector("#taskbar-opacity").addEventListener("input", (e) => {
+          var v = e.target.value;
+          body.querySelector("#taskbar-opacity-val").textContent = v + "%";
+          localStorage.setItem("neptuneos.taskbar.opacity", v);
+          var tb = document.getElementById("taskbar");
+          if (tb) tb.style.opacity = v / 100;
+        });
+        body.querySelector("#cursor-size-sel").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.cursor.size", e.target.value);
+          var sizes = { small: 0.8, normal: 1, large: 1.3 };
+          var vc = document.getElementById("virtual-cursor");
+          if (vc) vc.style.transform = "scale(" + (sizes[e.target.value] || 1) + ")";
+        });
+        body.querySelector("#anim-speed-sel").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.anim.speed", e.target.value);
+          var speeds = { fast: "0.15s", normal: "0.25s", slow: "0.5s", off: "0s" };
+          document.documentElement.style.setProperty("--anim-speed", speeds[e.target.value] || "0.25s");
+        });
+        body.querySelector("#icon-labels-toggle").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.icon.labels", e.target.checked ? "on" : "off");
+          document.querySelectorAll(".desktop-icon .label").forEach(function (l) {
+            l.style.display = e.target.checked ? "" : "none";
+          });
+        });
+        body.querySelector("#shadow-toggle").addEventListener("change", (e) => {
+          localStorage.setItem("neptuneos.window.shadows", e.target.checked ? "on" : "off");
+          document.documentElement.style.setProperty("--window-shadow", e.target.checked ? "0 4px 12px rgba(0,0,0,0.35)" : "none");
         });
       }
 

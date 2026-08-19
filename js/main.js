@@ -149,6 +149,17 @@
       if (OS.dock) OS.dock.show();
     }
 
+    /* Create tablet mode start button */
+    var tabletStartBtn = document.createElement("button");
+    tabletStartBtn.className = "tablet-start-btn";
+    tabletStartBtn.title = "Start";
+    tabletStartBtn.textContent = "\u229e"; /* Plus-in-square */
+    tabletStartBtn.addEventListener("click", function () {
+      var startMenu = document.getElementById("start-menu");
+      if (startMenu) startMenu.classList.toggle("hidden");
+    });
+    document.body.appendChild(tabletStartBtn);
+
     const bootScreen = document.getElementById("boot-screen");
     const bootFill = bootScreen.querySelector(".boot-bar-fill");
     const hideBoot = () => {

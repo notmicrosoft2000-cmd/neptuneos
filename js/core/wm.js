@@ -379,6 +379,27 @@
   window.OS.prompt = promptDlg;
   window.OS.esc = esc;
 
+  /* Restore saved appearance settings */
+  (function restoreSettings() {
+    var root = document.documentElement.style;
+    var animSpeed = localStorage.getItem("neptuneos.anim.speed");
+    if (animSpeed) {
+      var speeds = { fast: "0.15s", normal: "0.25s", slow: "0.5s", off: "0s" };
+      root.setProperty("--anim-speed", speeds[animSpeed] || "0.25s");
+    }
+    var noShadows = localStorage.getItem("neptuneos.window.shadows") === "off";
+    if (noShadows) root.setProperty("--window-shadow", "none");
+    var taskbarOp = localStorage.getItem("neptuneos.taskbar.opacity");
+    if (taskbarOp) {
+      var tb = document.getElementById("taskbar");
+      if (tb) tb.style.opacity = taskbarOp / 100;
+    }
+    var iconLabels = localStorage.getItem("neptuneos.icon.labels");
+    if (iconLabels === "off") {
+      document.querySelectorAll(".desktop-icon .label").forEach(function (l) { l.style.display = "none"; });
+    }
+  })();
+
   /* Branded "About" box used by apps (Help menus etc.) */
   window.OS.about = function (appName, icon) {
     const b = OS.brand || { product: "NeptuneOS", version: "1.0", build: "2600", copyright: "", company: "Neptune Productions" };

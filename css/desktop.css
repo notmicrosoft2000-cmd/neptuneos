@@ -383,3 +383,93 @@
   filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
 }
 #virtual-cursor.down { filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5)) brightness(0.85); }
+
+/* ===== Extra polish & animations ===== */
+
+/* Smooth desktop icon hover */
+.desktop-icon {
+  transition: background 0.15s, transform 0.15s;
+}
+.desktop-icon:active {
+  transform: scale(0.95);
+}
+
+/* Window hover glow */
+.window:hover {
+  box-shadow: var(--window-shadow), 0 0 0 1px rgba(37, 110, 220, 0.15);
+}
+.window.active {
+  box-shadow: var(--window-shadow), 0 0 0 1px rgba(37, 110, 220, 0.25);
+}
+
+/* Smooth taskbar button transitions */
+.taskbar-btn {
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.taskbar-btn:active {
+  transform: scale(0.97);
+}
+
+/* Start menu smooth hover */
+.start-pin, .start-program {
+  transition: background 0.12s, color 0.12s, transform 0.1s;
+}
+.start-pin:active, .start-program:active {
+  transform: scale(0.97);
+}
+
+/* Context menu pop-in */
+#context-menu {
+  animation: ctx-pop 0.12s ease-out;
+}
+@keyframes ctx-pop {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Taskbar task button press effect */
+.window-task:active {
+  transform: scale(0.97);
+}
+
+/* Boot screen smooth transitions */
+.boot-logo {
+  filter: drop-shadow(0 0 8px rgba(106, 169, 242, 0.5));
+}
+
+/* Shutdown screen glow effect */
+.shutdown-text {
+  text-shadow: 0 0 12px rgba(106, 169, 242, 0.3);
+}
+
+/* Window focus transition */
+.window {
+  transition: box-shadow 0.15s;
+}
+
+/* Smooth button hover throughout */
+.btn {
+  transition: background 0.12s, box-shadow 0.12s, transform 0.1s;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Wallpaper overlay effect */
+#wallpaper {
+  transition: background 0.5s ease;
+}
+
+/* Scrollbar smooth appearance */
+*::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+/* Window maximize/restore animation */
+.window {
+  transition: box-shadow 0.15s, left 0.15s, top 0.15s, width 0.15s, height 0.15s;
+}
+.window.no-transition {
+  transition: none !important;
+}

@@ -1,12 +1,12 @@
 /* =========================================================
  * neptuneOS — Web Browser
- * CORS-proxied browser with New Tab page, URL bar, search,
- * navigation, bookmarks, and srcdoc-based rendering.
+ * Direct-iframe browser with DuckDuckGo HTML search, URL
+ * navigation, New Tab page, bookmarks, and error fallback.
  * ========================================================= */
 (function () {
   "use strict";
 
-  var PROXY = "https://api.allorigins.win/raw?url=";
+  var DDG_HTML = "https://html.duckduckgo.com/html/";
 
   var BOOKMARKS = [
     { label: "Home", url: "__home__" },
@@ -35,9 +35,9 @@
   var historyStack = [];
   var historyIdx = -1;
   var isHome = true;
-  var loading = false;
   var currentUrl = "";
-  var blobUrls = [];
+  var loadTimer = null;
+  var blankTimer = null;
 
   function buildNewTabHTML() {
     var linksHtml = QUICK_LINKS.map(function (l) {
@@ -55,7 +55,7 @@
       '<!DOCTYPE html><html><head><meta charset="utf-8"><title>NeptuneOS Browser</title>' +
       "<style>" +
       "*{margin:0;padding:0;box-sizing:border-box;}" +
-      "body{font-family:Tahoma,sans-serif;background:#f0f0f0;color:#333;display:flex;flex-direction:column;align-items:center;padding:32px 16px;}" +
+      "body{font-family:Tahoma,sans-serif;background:#f0f0f0;color:#333;display:flex;flex-direction:column;align-items:center;padding:32px 16px;min-height:100vh;}" +
       "h1{font-size:22px;color:#245edc;margin-bottom:4px;}" +
       "sub{color:#888;font-size:12px;margin-bottom:24px;}" +
       ".search{display:flex;width:100%;max-width:480px;margin-bottom:24px;}" +
@@ -64,7 +64,7 @@
       ".search button{padding:8px 18px;font-size:14px;background:#245edc;color:#fff;border:none;border-radius:0 4px 4px 0;cursor:pointer;}" +
       ".search button:hover{background:#1a54c8;}" +
       ".links{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;width:100%;max-width:600px;}" +
-      ".link{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:1px solid #d0d0d0;border-radius:6px;text-decoration:none;color:#222;font-size:13px;cursor:pointer;transition:background 0.1s,border-color 0.1s;}" +
+      ".link{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:1px solid #d0d0d0;border-radius:6px;text-decoration:none;color:#222;font-size:13px;cursor:pointer;transition:background .1s,border-color .1s;}" +
       ".link:hover{background:#e8f0fc;border-color:#245edc;}" +
       ".link img{width:24px;height:24px;flex-shrink:0;}" +
       ".link b{font-size:12px;display:block;}" +
@@ -94,61 +94,11 @@
 
   var NEW_TAB_HTML = buildNewTabHTML();
 
-  function buildErrorHTML(title, desc) {
-    return (
-      '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-      "<style>" +
-      "*{margin:0;padding:0;box-sizing:border-box;}" +
-      "body{font-family:Tahoma,sans-serif;background:#f4f4f4;color:#333;display:flex;align-items:center;justify-content:center;min-height:100vh;}" +
-      ".err{max-width:420px;text-align:center;padding:32px;}" +
-      ".err .icon{font-size:48px;margin-bottom:12px;}" +
-      ".err h2{font-size:18px;color:#c0392b;margin-bottom:8px;}" +
-      ".err p{font-size:13px;color:#666;line-height:1.5;}" +
-      "</style></head><body>" +
-      '<div class="err">' +
-      '<div class="icon">&#9888;</div>' +
-      "<h2>" + OS.esc(title) + "</h2>" +
-      "<p>" + OS.esc(desc) + "</p>" +
-      "</div></body></html>"
-    );
-  }
-
-  function buildLoadingHTML(domain) {
-    return (
-      '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-      "<style>" +
-      "*{margin:0;padding:0;box-sizing:border-box;}" +
-      "body{font-family:Tahoma,sans-serif;background:#f4f4f4;color:#555;display:flex;align-items:center;justify-content:center;min-height:100vh;}" +
-      ".ld{text-align:center;}" +
-      ".ld .spinner{width:32px;height:32px;border:3px solid #ddd;border-top-color:#245edc;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}" +
-      "@keyframes spin{to{transform:rotate(360deg);}}" +
-      ".ld p{font-size:13px;}" +
-      "</style></head><body>" +
-      '<div class="ld"><div class="spinner"></div>' +
-      "<p>Loading " + OS.esc(domain) + "...</p></div>" +
-      "</body></html>"
-    );
-  }
-
   function isLikelyURL(str) {
     if (/^https?:\/\//i.test(str)) return true;
     if (/^[\w-]+(\.[\w-]+)+(\/.*)?$/.test(str)) return true;
     if (/^localhost(:\d+)?(\/.*)?$/.test(str)) return true;
     return false;
-  }
-
-  function cleanBlobUrls() {
-    for (var i = 0; i < blobUrls.length; i++) {
-      try { URL.revokeObjectURL(blobUrls[i]); } catch (e) {}
-    }
-    blobUrls = [];
-  }
-
-  function makeBlobUrl(html) {
-    var blob = new Blob([html], { type: "text/html" });
-    var url = URL.createObjectURL(blob);
-    blobUrls.push(url);
-    return url;
   }
 
   function getDomain(url) {
@@ -157,18 +107,6 @@
     } catch (e) {
       return url;
     }
-  }
-
-  function fixRelativeUrls(html, baseUrl) {
-    var baseTag = '<base href="' + OS.esc(baseUrl) + '">';
-    if (/<head[\s>]/i.test(html)) {
-      html = html.replace(/(<head[\s>])/i, "$1" + baseTag);
-    } else if (/<html[\s>]/i.test(html)) {
-      html = html.replace(/(<html[\s>])/i, "$1<head>" + baseTag + "</head>");
-    } else {
-      html = "<head>" + baseTag + "</head>" + html;
-    }
-    return html;
   }
 
   var app = {
@@ -201,7 +139,8 @@
           win = null;
           iframe = null;
           window.removeEventListener("message", onFrameMessage);
-          cleanBlobUrls();
+          clearTimeout(loadTimer);
+          clearTimeout(blankTimer);
         },
       });
 
@@ -218,13 +157,13 @@
         "</div>" +
         '<div class="browser-bookmarks" id="browser-bookmarks"></div>' +
         '<div class="browser-frame-wrap">' +
-        '  <iframe class="browser-iframe" id="browser-iframe" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>' +
+        '  <iframe class="browser-iframe" id="browser-iframe"></iframe>' +
         '  <div class="browser-blank" id="browser-blank"></div>' +
         '  <div class="browser-error" id="browser-error" style="display:none;">' +
         '    <div class="browser-error-inner">' +
         '      <div class="browser-error-icon">&#9888;</div>' +
         '      <div class="browser-error-title" id="browser-error-title">Failed to load page</div>' +
-        '      <div class="browser-error-desc" id="browser-error-desc">The page could not be fetched.</div>' +
+        '      <div class="browser-error-desc" id="browser-error-desc">The page could not be loaded.</div>' +
         '      <button class="btn browser-error-btn" id="browser-open-real">Open in Real Browser &rarr;</button>' +
         '      <button class="btn browser-error-back" id="browser-error-back">&larr; Go Back</button>' +
         '    </div>' +
@@ -277,6 +216,8 @@
 
       window.addEventListener("message", onFrameMessage);
 
+      iframe.addEventListener("load", onIframeLoad);
+
       if (startUrl) {
         navigate(startUrl);
       } else {
@@ -294,22 +235,48 @@
         }
       }
 
+      function onIframeLoad() {
+        if (isHome) return;
+        clearTimeout(loadTimer);
+        clearTimeout(blankTimer);
+
+        try {
+          var loc = iframe.contentWindow.location.href;
+          if (loc === "about:blank" || loc === "about:srcdoc") {
+            blankTimer = setTimeout(function () {
+              try {
+                var loc2 = iframe.contentWindow.location.href;
+                if (loc2 === "about:blank" || loc2 === "about:srcdoc") {
+                  showError(currentUrl, "This page could not be loaded. It may block iframe embedding. Try opening it in your real browser instead.");
+                } else {
+                  statusEl.textContent = "Done";
+                }
+              } catch (e2) {
+                statusEl.textContent = "Done";
+              }
+            }, 1500);
+          } else {
+            statusEl.textContent = "Done";
+          }
+        } catch (e) {
+          statusEl.textContent = "Done";
+        }
+      }
+
       function loadNewTab() {
         isHome = true;
-        loading = false;
         currentUrl = "";
-        cleanBlobUrls();
+        clearTimeout(loadTimer);
+        clearTimeout(blankTimer);
         blank.style.display = "flex";
         errorOverlay.style.display = "none";
         iframe.style.display = "none";
-        iframe.removeAttribute("srcdoc");
         iframe.src = "about:blank";
-        var blobUrl = makeBlobUrl(NEW_TAB_HTML);
+        iframe.srcdoc = "";
         blank.innerHTML = "";
         var frame = document.createElement("iframe");
         frame.style.cssText = "width:100%;height:100%;border:none;";
-        frame.setAttribute("sandbox", "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox");
-        frame.src = blobUrl;
+        frame.srcdoc = NEW_TAB_HTML;
         blank.appendChild(frame);
         urlInput.value = "";
         win.setTitle("Browser");
@@ -329,7 +296,7 @@
           if (isLikelyURL(raw)) {
             raw = "https://" + raw;
           } else {
-            raw = "https://duckduckgo.com/?q=" + encodeURIComponent(raw);
+            raw = DDG_HTML + "?q=" + encodeURIComponent(raw);
           }
         }
         navigate(raw);
@@ -337,97 +304,55 @@
 
       function navigate(url) {
         if (!url) return;
-        if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+        if (!/^https?:\/\//i.test(url)) {
+          if (isLikelyURL(url)) {
+            url = "https://" + url;
+          } else {
+            url = DDG_HTML + "?q=" + encodeURIComponent(url);
+          }
+        }
         isHome = false;
-        loading = true;
         currentUrl = url;
-        urlInput.value = url;
+        clearTimeout(loadTimer);
+        clearTimeout(blankTimer);
         blank.style.display = "none";
         errorOverlay.style.display = "none";
         iframe.style.display = "block";
+        iframe.srcdoc = "";
+        iframe.src = url;
 
         var domain = getDomain(url);
+        urlInput.value = url;
         win.setTitle(OS.esc(domain) + " \u2014 Browser");
         statusEl.textContent = "Loading " + domain + "...";
 
-        var loadingBlob = makeBlobUrl(buildLoadingHTML(domain));
-        iframe.src = "about:blank";
-        iframe.srcdoc = "";
-        var frame = blank.querySelector("iframe");
-        if (frame) {
-          blank.style.display = "flex";
-          blank.innerHTML = "";
-          var lf = document.createElement("iframe");
-          lf.style.cssText = "width:100%;height:100%;border:none;";
-          lf.setAttribute("sandbox", "allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox");
-          lf.src = loadingBlob;
-          blank.appendChild(lf);
-        }
-
         pushHistory(url);
         updateButtons();
-        fetchViaProxy(url);
+
+        loadTimer = setTimeout(function () {
+          try {
+            var loc = iframe.contentWindow.location.href;
+            if (loc === "about:blank" || loc === "about:srcdoc") {
+              showError(url, "This page took too long to respond or could not be loaded.");
+            } else {
+              statusEl.textContent = "Done";
+            }
+          } catch (e) {
+            statusEl.textContent = "Done";
+          }
+        }, 10000);
       }
 
-      function fetchViaProxy(url) {
-        var proxied = PROXY + encodeURIComponent(url);
-
-        fetch(proxied)
-          .then(function (resp) {
-            if (!resp.ok) {
-              throw new Error("HTTP " + resp.status + " " + resp.statusText);
-            }
-            return resp.text();
-          })
-          .then(function (html) {
-            if (currentUrl !== url) return;
-
-            var fixed = fixRelativeUrls(html, url);
-            var domain = getDomain(url);
-
-            iframe.src = "about:blank";
-            blank.style.display = "none";
-            errorOverlay.style.display = "none";
-            iframe.style.display = "block";
-            iframe.srcdoc = fixed;
-
-            urlInput.value = url;
-            win.setTitle(OS.esc(domain) + " \u2014 Browser");
-            statusEl.textContent = "Done";
-            loading = false;
-            updateButtons();
-          })
-          .catch(function (err) {
-            if (currentUrl !== url) return;
-
-            var domain = getDomain(url);
-            var msg = err.message || "Could not fetch the page.";
-            var errHtml = buildErrorHTML(
-              "Failed to load " + domain,
-              "The page could not be loaded through the proxy. " + msg
-            );
-            var errBlob = makeBlobUrl(errHtml);
-
-            iframe.src = "about:blank";
-            blank.style.display = "none";
-            errorOverlay.style.display = "none";
-            iframe.style.display = "block";
-            iframe.srcdoc = "";
-
-            iframe.onload = function () {
-              iframe.onload = null;
-              fetch(errBlob).then(function (r) { return r.text(); }).then(function (h) {
-                iframe.srcdoc = h;
-              });
-            };
-            iframe.srcdoc = errHtml;
-
-            urlInput.value = url;
-            win.setTitle(OS.esc(domain) + " \u2014 Browser");
-            statusEl.textContent = "Error";
-            loading = false;
-            updateButtons();
-          });
+      function showError(url, desc) {
+        var domain = getDomain(url);
+        errorOverlay.style.display = "flex";
+        iframe.style.display = "none";
+        blank.style.display = "none";
+        errorDesc.textContent = desc || "The page could not be loaded.";
+        win.setTitle(OS.esc(domain) + " \u2014 Browser");
+        statusEl.textContent = "Error";
+        clearTimeout(loadTimer);
+        clearTimeout(blankTimer);
       }
 
       function openExternal() {
@@ -466,9 +391,12 @@
         }
         if (currentUrl) {
           statusEl.textContent = "Refreshing...";
-          loading = true;
-          updateButtons();
-          fetchViaProxy(currentUrl);
+          var url = currentUrl;
+          currentUrl = "";
+          iframe.src = "about:blank";
+          setTimeout(function () {
+            navigate(url);
+          }, 50);
         }
       }
 

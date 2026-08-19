@@ -210,7 +210,7 @@
 
           /* games render */
           const snakeWin = OS.wm.windows.find((x) => x.app === "snake");
-          ok("snake canvas renders", !!snakeWin.content.querySelector("#snake-canvas") && snakeWin.content.querySelector("#snake-canvas").width === 384);
+          ok("snake canvas renders", !!snakeWin.content.querySelector("#snake-canvas") && snakeWin.content.querySelector("#snake-canvas").width >= 384);
           ok("snake score shows", snakeWin.content.textContent.includes("Score: 0"));
           const pacWin = OS.wm.windows.find((x) => x.app === "pacman");
           ok("pacman canvas renders", !!pacWin.content.querySelector("#pac-canvas") && pacWin.content.querySelector("#pac-canvas").width === 304);

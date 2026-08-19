@@ -1,27 +1,29 @@
 /* =========================================================
  * NeptuneOS — Minesweeper
- * Classic Windows XP Minesweeper clone. 9×9 beginner grid,
- * 10 mines. Left-click to reveal, right-click to flag.
+ * Classic Minesweeper with Beginner/Expert/Intermediate,
+ * smooth canvas rendering, high scores, and polish.
  * ========================================================= */
 (function () {
   "use strict";
 
-  const COLS = 9, ROWS = 9, MINES = 10;
+  const DIFFICULTIES = {
+    beginner:     { cols: 9,  rows: 9,  mines: 10, label: "Beginner" },
+    intermediate: { cols: 16, rows: 16, mines: 40, label: "Intermediate" },
+    expert:       { cols: 30, rows: 16, mines: 99, label: "Expert" },
+  };
   const CELL = 28;
+  const LS_KEY = "neptuneos.minesweeper.scores";
 
   let win = null;
   let canvas = null, ctx = null;
   let minesEl = null, timerEl = null, faceBtn = null;
   let timerHandle = null;
 
-  let board = [];
-  let revealed = [];
-  let flagged = [];
-  let gameOver = false;
-  let gameWon = false;
-  let firstClick = false;
-  let timerVal = 0;
-  let flagCount = 0;
+  let diff = DIFFICULTIES.beginner;
+  let diffKey = "beginner";
+  let board = [], revealed = [], flagged = [];
+  let gameOver = false, gameWon = false;
+  let firstClick = false, timerVal = 0, flagCount = 0;
 
   const app = {
     id: "minesweeper",
@@ -35,8 +37,8 @@
       win = OS.wm.createWindow({
         title: "Minesweeper",
         icon: this.icon,
-        width: COLS * CELL + 26,
-        height: ROWS * CELL + 110,
+        width: diff.cols * CELL + 26,
+        height: diff.rows * CELL + 110,
         resizable: false,
         app: "minesweeper",
         onClose: () => { stopTimer(); win = null; },
@@ -44,12 +46,21 @@
 
       win.content.innerHTML =
         '<div class="game-wrap" style="background:#c0c0c0;border-color:#808080 #fff #fff #808080">' +
+        '  <div class="ms-menu-bar">' +
+        '    <span class="ms-menu" data-menu="game">Game</span>' +
+        '    <span class="ms-menu" data-menu="help">Help</span>' +
+        '  </div>' +
         '  <div class="ms-status">' +
         '    <div class="ms-counter" id="ms-mines">010</div>' +
         '    <div class="ms-face-wrap"><canvas id="ms-face" width="26" height="26"></canvas></div>' +
         '    <div class="ms-counter" id="ms-timer">000</div>' +
         '  </div>' +
         '  <div class="ms-grid-wrap"><canvas id="ms-canvas"></canvas></div>' +
+        '  <div class="ms-diff-bar">' +
+        '    <button class="ms-diff-btn" data-diff="beginner">Beginner</button>' +
+        '    <button class="ms-diff-btn" data-diff="intermediate">Intermediate</button>' +
+        '    <button class="ms-diff-btn" data-diff="expert">Expert</button>' +
+        '  </div>' +
         '</div>';
 
       canvas = win.content.querySelector("#ms-canvas");
@@ -58,100 +69,91 @@
       minesEl = win.content.querySelector("#ms-mines");
       timerEl = win.content.querySelector("#ms-timer");
 
-      const faceCtx = faceBtn.getContext("2d");
-      drawFace(faceCtx, "happy");
+      win.content.querySelectorAll(".ms-diff-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          diffKey = btn.dataset.diff;
+          diff = DIFFICULTIES[diffKey];
+          win.resize(diff.cols * CELL + 26, diff.rows * CELL + 110);
+          resetGame();
+        });
+      });
 
-      canvas.addEventListener("click", onLeftClick);
-      canvas.addEventListener("contextmenu", onRightClick);
-      faceBtn.addEventListener("click", () => resetGame());
+      faceBtn.addEventListener("click", function () { resetGame(); });
 
+      drawFace(faceBtn.getContext("2d"), "happy");
       resetGame();
     },
 
     onWindowClose() {
       stopTimer();
-      if (canvas) {
-        canvas.removeEventListener("click", onLeftClick);
-        canvas.removeEventListener("contextmenu", onRightClick);
-      }
-      if (faceBtn) faceBtn.removeEventListener("click", resetGame);
       win = null;
     },
   };
 
   function resetGame() {
     stopTimer();
-    board = [];
-    revealed = [];
-    flagged = [];
-    gameOver = false;
-    gameWon = false;
-    firstClick = false;
-    timerVal = 0;
-    flagCount = 0;
+    board = []; revealed = []; flagged = [];
+    gameOver = false; gameWon = false; firstClick = false;
+    timerVal = 0; flagCount = 0;
 
-    for (let r = 0; r < ROWS; r++) {
-      board[r] = [];
-      revealed[r] = [];
-      flagged[r] = [];
-      for (let c = 0; c < COLS; c++) {
+    for (var r = 0; r < diff.rows; r++) {
+      board[r] = []; revealed[r] = []; flagged[r] = [];
+      for (var c = 0; c < diff.cols; c++) {
         board[r][c] = 0;
         revealed[r][c] = false;
         flagged[r][c] = false;
       }
     }
 
-    minesEl.textContent = "010";
+    minesEl.textContent = String(diff.mines).padStart(3, "0");
     timerEl.textContent = "000";
-    const faceCtx = faceBtn.getContext("2d");
-    drawFace(faceCtx, "happy");
+    drawFace(faceBtn.getContext("2d"), "happy");
     resizeCanvas();
     drawBoard();
   }
 
   function placeMines(safeR, safeC) {
-    let placed = 0;
-    while (placed < MINES) {
-      const r = Math.floor(Math.random() * ROWS);
-      const c = Math.floor(Math.random() * COLS);
+    var placed = 0;
+    while (placed < diff.mines) {
+      var r = Math.floor(Math.random() * diff.rows);
+      var c = Math.floor(Math.random() * diff.cols);
       if (board[r][c] === -1) continue;
       if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
       board[r][c] = -1;
       placed++;
     }
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (board[r][c] === -1) continue;
-        let count = 0;
-        for (let dr = -1; dr <= 1; dr++) {
-          for (let dc = -1; dc <= 1; dc++) {
-            const nr = r + dr, nc = c + dc;
-            if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc] === -1) count++;
+    for (var r2 = 0; r2 < diff.rows; r2++) {
+      for (var c2 = 0; c2 < diff.cols; c2++) {
+        if (board[r2][c2] === -1) continue;
+        var count = 0;
+        for (var dr = -1; dr <= 1; dr++) {
+          for (var dc = -1; dc <= 1; dc++) {
+            var nr = r2 + dr, nc = c2 + dc;
+            if (nr >= 0 && nr < diff.rows && nc >= 0 && nc < diff.cols && board[nr][nc] === -1) count++;
           }
         }
-        board[r][c] = count;
+        board[r2][c2] = count;
       }
     }
   }
 
   function onLeftClick(e) {
     if (gameOver || gameWon) return;
-    const { r, c } = cellFromEvent(e);
-    if (r < 0 || c < 0) return;
-    if (flagged[r][c] || revealed[r][c]) return;
+    var pos = cellFromEvent(e);
+    if (pos.r < 0 || pos.c < 0) return;
+    if (flagged[pos.r][pos.c] || revealed[pos.r][pos.c]) return;
 
     if (!firstClick) {
       firstClick = true;
-      placeMines(r, c);
+      placeMines(pos.r, pos.c);
       startTimer();
     }
 
-    if (board[r][c] === -1) {
-      loseGame(r, c);
+    if (board[pos.r][pos.c] === -1) {
+      loseGame(pos.r, pos.c);
       return;
     }
-
-    floodReveal(r, c);
+    floodReveal(pos.r, pos.c);
     checkWin();
     drawBoard();
   }
@@ -159,28 +161,28 @@
   function onRightClick(e) {
     e.preventDefault();
     if (gameOver || gameWon) return;
-    const { r, c } = cellFromEvent(e);
-    if (r < 0 || c < 0) return;
-    if (revealed[r][c]) return;
+    var pos = cellFromEvent(e);
+    if (pos.r < 0 || pos.c < 0) return;
+    if (revealed[pos.r][pos.c]) return;
 
-    if (flagged[r][c]) {
-      flagged[r][c] = false;
+    if (flagged[pos.r][pos.c]) {
+      flagged[pos.r][pos.c] = false;
       flagCount--;
     } else {
-      flagged[r][c] = true;
+      flagged[pos.r][pos.c] = true;
       flagCount++;
     }
-    minesEl.textContent = String(MINES - flagCount).padStart(3, "0");
+    minesEl.textContent = String(diff.mines - flagCount).padStart(3, "0");
     drawBoard();
   }
 
   function floodReveal(r, c) {
-    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+    if (r < 0 || r >= diff.rows || c < 0 || c >= diff.cols) return;
     if (revealed[r][c] || flagged[r][c]) return;
     revealed[r][c] = true;
     if (board[r][c] === 0) {
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
+      for (var dr = -1; dr <= 1; dr++) {
+        for (var dc = -1; dc <= 1; dc++) {
           floodReveal(r + dr, c + dc);
         }
       }
@@ -190,45 +192,54 @@
   function loseGame(hitR, hitC) {
     gameOver = true;
     stopTimer();
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
+    for (var r = 0; r < diff.rows; r++) {
+      for (var c = 0; c < diff.cols; c++) {
         revealed[r][c] = true;
       }
     }
     board[hitR][hitC] = -2;
-    const faceCtx = faceBtn.getContext("2d");
-    drawFace(faceCtx, "dead");
+    drawFace(faceBtn.getContext("2d"), "dead");
     drawBoard();
   }
 
   function checkWin() {
-    let unrevealed = 0;
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
+    var unrevealed = 0;
+    for (var r = 0; r < diff.rows; r++) {
+      for (var c = 0; c < diff.cols; c++) {
         if (!revealed[r][c]) unrevealed++;
       }
     }
-    if (unrevealed === MINES) {
+    if (unrevealed === diff.mines) {
       gameWon = true;
       stopTimer();
-      for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-          if (board[r][c] === -1) flagged[r][c] = true;
+      for (var r2 = 0; r2 < diff.rows; r2++) {
+        for (var c2 = 0; c2 < diff.cols; c2++) {
+          if (board[r2][c2] === -1) flagged[r2][c2] = true;
         }
       }
-      flagCount = MINES;
+      flagCount = diff.mines;
       minesEl.textContent = "000";
-      const faceCtx = faceBtn.getContext("2d");
-      drawFace(faceCtx, "cool");
+      drawFace(faceBtn.getContext("2d"), "cool");
       drawBoard();
+      saveScore(diffKey, timerVal);
     }
+  }
+
+  function saveScore(dk, time) {
+    try {
+      var scores = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+      if (!scores[dk] || time < scores[dk]) {
+        scores[dk] = time;
+        localStorage.setItem(LS_KEY, JSON.stringify(scores));
+      }
+    } catch (e) {}
   }
 
   function startTimer() {
     timerVal = 0;
     timerEl.textContent = "000";
     if (timerHandle) clearInterval(timerHandle);
-    timerHandle = setInterval(() => {
+    timerHandle = setInterval(function () {
       timerVal++;
       if (timerVal > 999) timerVal = 999;
       timerEl.textContent = String(timerVal).padStart(3, "0");
@@ -240,26 +251,25 @@
   }
 
   function cellFromEvent(e) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var x = (e.clientX - rect.left) * scaleX;
+    var y = (e.clientY - rect.top) * scaleY;
     return { r: Math.floor(y / CELL), c: Math.floor(x / CELL) };
   }
 
   function resizeCanvas() {
-    canvas.width = COLS * CELL;
-    canvas.height = ROWS * CELL;
+    canvas.width = diff.cols * CELL;
+    canvas.height = diff.rows * CELL;
   }
 
   function drawBoard() {
     ctx.fillStyle = "#c0c0c0";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        const x = c * CELL, y = r * CELL;
+    for (var r = 0; r < diff.rows; r++) {
+      for (var c = 0; c < diff.cols; c++) {
+        var x = c * CELL, y = r * CELL;
         if (!revealed[r][c]) {
           drawUnrevealedCell(x, y);
           if (flagged[r][c]) drawFlag(x, y);
@@ -296,11 +306,11 @@
     ctx.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
 
     if (val === -1 || val === -2) {
-      ctx.fillStyle = val === -2 ? "#ff0000" : "#c0c0c0";
+      ctx.fillStyle = val === -2 ? "#ff4444" : "#c0c0c0";
       ctx.fillRect(x, y, CELL, CELL);
       drawMine(x, y, val === -2);
     } else if (val > 0) {
-      const colors = ["", "#0000ff", "#008000", "#ff0000", "#000080", "#800000", "#008080", "#000000", "#808080"];
+      var colors = ["", "#0000ff", "#008000", "#ff0000", "#000080", "#800000", "#008080", "#000000", "#808080"];
       ctx.fillStyle = colors[val] || "#000";
       ctx.font = "bold 16px Tahoma, sans-serif";
       ctx.textAlign = "center";
@@ -310,11 +320,11 @@
   }
 
   function drawMine(x, y, isHit) {
-    const cx = x + CELL / 2, cy = y + CELL / 2;
+    var cx = x + CELL / 2, cy = y + CELL / 2;
     ctx.fillStyle = "#000";
-    const spikes = [[0, -8], [0, 8], [-8, 0], [8, 0], [-6, -6], [6, -6], [-6, 6], [6, 6]];
-    for (const [dx, dy] of spikes) {
-      ctx.fillRect(cx + dx - 1, cy + dy - 1, 3, 3);
+    var spikes = [[0, -8], [0, 8], [-8, 0], [8, 0], [-6, -6], [6, -6], [-6, 6], [6, 6]];
+    for (var i = 0; i < spikes.length; i++) {
+      ctx.fillRect(cx + spikes[i][0] - 1, cy + spikes[i][1] - 1, 3, 3);
     }
     ctx.beginPath();
     ctx.arc(cx, cy, 5, 0, Math.PI * 2);
@@ -334,7 +344,7 @@
   }
 
   function drawFlag(x, y) {
-    const cx = x + CELL / 2, cy = y + CELL / 2;
+    var cx = x + CELL / 2, cy = y + CELL / 2;
     ctx.fillStyle = "#000";
     ctx.fillRect(cx - 1, cy - 6, 2, 14);
     ctx.fillStyle = "#ff0000";
@@ -347,14 +357,11 @@
     ctx.fillRect(cx - 4, cy + 7, 10, 3);
   }
 
-  function drawFace(state) {
-    const s = 26, h = s / 2;
-    const c = state === "dead" ? faceBtn.getContext("2d") : ctx;
-
-    const fc = faceBtn.getContext("2d");
+  function drawFace(fc, state) {
+    fc.clearRect(0, 0, 26, 26);
     fc.fillStyle = "#ffff00";
     fc.beginPath();
-    fc.arc(h, h, 10, 0, Math.PI * 2);
+    fc.arc(13, 13, 10, 0, Math.PI * 2);
     fc.fill();
     fc.strokeStyle = "#000";
     fc.lineWidth = 1.5;
@@ -365,30 +372,30 @@
       fc.font = "bold 10px sans-serif";
       fc.textAlign = "center";
       fc.textBaseline = "middle";
-      fc.fillText("X", h - 4, h - 2);
-      fc.fillText("X", h + 4, h - 2);
+      fc.fillText("\u00d7", 9, 11);
+      fc.fillText("\u00d7", 17, 11);
       fc.beginPath();
-      fc.arc(h, h + 5, 4, 0, Math.PI);
+      fc.arc(13, 18, 4, 0, Math.PI);
       fc.stroke();
     } else if (state === "cool") {
       fc.strokeStyle = "#000";
       fc.lineWidth = 2;
       fc.beginPath();
-      fc.moveTo(h - 6, h - 1);
-      fc.lineTo(h - 3, h + 1);
-      fc.lineTo(h - 1, h - 2);
-      fc.moveTo(h + 6, h - 1);
-      fc.lineTo(h + 3, h + 1);
-      fc.lineTo(h + 1, h - 2);
+      fc.moveTo(7, 12);
+      fc.lineTo(10, 14);
+      fc.lineTo(12, 11);
+      fc.moveTo(19, 12);
+      fc.lineTo(16, 14);
+      fc.lineTo(14, 11);
       fc.stroke();
       fc.beginPath();
-      fc.arc(h, h + 4, 4, 0, Math.PI);
+      fc.arc(13, 17, 4, 0, Math.PI);
       fc.stroke();
     } else {
-      fc.fillRect(h - 4, h - 3, 2, 3);
-      fc.fillRect(h + 2, h - 3, 2, 3);
+      fc.fillRect(9, 10, 2, 3);
+      fc.fillRect(15, 10, 2, 3);
       fc.beginPath();
-      fc.arc(h, h + 2, 4, 0.1, Math.PI - 0.1);
+      fc.arc(13, 15, 4, 0.1, Math.PI - 0.1);
       fc.stroke();
     }
   }

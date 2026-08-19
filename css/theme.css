@@ -114,3 +114,47 @@ input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:foc
   inset: 0;
   background: var(--bliss);
 }
+
+/* ===== Touch device cursor ===== */
+body.touch-device,
+body.touch-device * {
+  cursor: none !important;
+}
+body.touch-device input,
+body.touch-device textarea,
+body.touch-device [contenteditable] {
+  cursor: text !important;
+}
+
+/* ===== Tablet mode start button ===== */
+.tablet-start-btn {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 976;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #5cb85c 0%, #449d44 100%);
+  border: 2px solid #398439;
+  color: #fff;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-family: "Trebuchet MS", sans-serif;
+}
+.tablet-start-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.tablet-start-btn:active {
+  transform: scale(0.95);
+}
+body.tablet-mode .tablet-start-btn {
+  display: flex;
+}

@@ -26,8 +26,11 @@
     cursorEl.style.cssText =
       "position:fixed;z-index:99999;pointer-events:none;display:none;" +
       "filter:drop-shadow(1px 1px 2px rgba(0,0,0,0.5));" +
-      "transition:none;";
+      "transition:none;width:24px;height:24px;" +
+      "will-change:left,top;";
     document.body.appendChild(cursorEl);
+    /* Hide real cursor on touch devices */
+    document.body.classList.add("touch-device");
   }
 
   function show(x, y) {
@@ -155,13 +158,12 @@
     state = null;
 
     if (wasLong || wasRight) {
-      hide();
+      /* Keep cursor visible, just reset mouseDown */
       return;
     }
 
     const el = target(x, y);
     if (wasDrag) {
-      /* released after drag - mouseup on target */
       dispatch("mouseup", x, y, el, 0);
       lastTap = { t: 0, x, y };
     } else if (wasTap) {
@@ -173,7 +175,7 @@
       dispatch("mouseup", x, y, window, 0);
       lastTap = { t: 0, x, y };
     }
-    setTimeout(hide, 150);
+    /* Keep cursor visible — don't hide on touch */
   }
 
   function onCancel() {
