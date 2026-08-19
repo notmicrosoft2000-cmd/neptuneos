@@ -9,7 +9,7 @@
   var PINS = ["explorer", "browser", "settings"];
 
   /* Which apps to show in the main list (left column) — in display order */
-  var MAIN_APPS = ["email", "notepad", "mediaplayer", "terminal", "paint", "calculator", "clock"];
+  var MAIN_APPS = ["email", "codeeditor", "mediaplayer", "terminal", "paint", "calculator", "worldclock"];
 
   /* Games shown as a compact sub-list */
   var GAME_APPS = ["snake", "pacman", "tetris", "minesweeper", "solitaire", "game2048"];

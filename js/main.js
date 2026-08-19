@@ -145,6 +145,18 @@
       icon: "assets/icons/game2048.svg",
       launch: () => OS.apps.game2048.launch(),
     });
+
+    d.addItem({
+      id: "codeeditor", label: "Code Editor",
+      icon: "assets/icons/codeeditor.svg",
+      launch: () => OS.apps.codeeditor.launch(),
+    });
+
+    d.addItem({
+      id: "worldclock", label: "World Clock",
+      icon: "assets/icons/worldclock.svg",
+      launch: () => OS.apps.worldclock.launch(),
+    });
   }
 
   function boot() {
