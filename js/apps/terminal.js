@@ -44,6 +44,7 @@
 
       term.textContent = "";
       print(OS.brand.product + " [Version 5.1." + OS.brand.build + "]\n" + OS.brand.copyright + "\n", "t-cy");
+      print("NeptuneDOS Shell v14.0 ready — type 'help' for commands\n", "t-dim");
       newInputLine();
       term.focus();
     },

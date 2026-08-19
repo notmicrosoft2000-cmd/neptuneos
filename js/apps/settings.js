@@ -380,7 +380,8 @@
 
         body.innerHTML =
           "<h3>About " + OS.brand.product + "</h3>" +
-          "<p><b>" + OS.brand.product + " Version 5.1." + OS.brand.build + "</b> &mdash; a <b>" + OS.brand.company + "</b> product.<br>" + OS.brand.copyright + ".<br>Desktop operating system shell written in plain HTML, CSS &amp; JavaScript. All files and settings are stored in your browser.</p>" +
+          "<p><b>" + OS.brand.product + " Version 5.1." + OS.brand.build + "</b> &mdash; a <b>" + OS.brand.company + "</b> product.<br>" + OS.brand.copyright + ".<br>Desktop operating system shell written in plain HTML, CSS &amp; JavaScript. All files and settings are stored in your browser.<br>" +
+          "Companion shell: <b>" + (OS.brand.shell || "NeptuneDOS") + "</b> (Python CLI, 60+ commands)</p>" +
           '<div class="settings-group">' +
           "<p>Registered to: <b>" + user + "</b><br>" +
           "Computer name: <b>" + computer + "</b><br>" +

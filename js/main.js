@@ -10,10 +10,11 @@
 
   OS.brand = {
     product: "NeptuneOS",
-    version: "1.0",
+    version: "2.1",
     build: "2600",
     copyright: "Copyright \u00a9 2026 Neptune Productions",
     company: "Neptune Productions",
+    shell: "NeptuneDOS v14.0",
   };
 
   function registerDesktopShortcuts() {
