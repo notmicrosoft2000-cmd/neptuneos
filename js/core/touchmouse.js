@@ -2,7 +2,7 @@
  * neptuneOS — Virtual touch mouse
  * On touchscreens: finger drags the cursor, tap = click,
  * double-tap or long-press = right-click, drag = hold+move.
- * The cursor follows your finger like a real mouse.
+ * Scrollable areas get native touch scrolling.
  * ========================================================= */
 (function () {
   "use strict";
@@ -14,6 +14,25 @@
   let cursorEl = null;
   let state = null;
   let lastTap = { t: 0, x: -9999, y: -9999 };
+
+  /* Check if element or an ancestor is scrollable (has overflow and content overflow) */
+  function findScrollable(el) {
+    let node = el;
+    while (node && node !== document.body && node !== document.documentElement) {
+      const s = getComputedStyle(node);
+      const ov = s.overflow + s.overflowX + s.overflowY;
+      if ((ov.indexOf("auto") !== -1 || ov.indexOf("scroll") !== -1) &&
+          node.scrollHeight > node.clientHeight + 4) {
+        return node;
+      }
+      if ((ov.indexOf("auto") !== -1 || ov.indexOf("scroll") !== -1) &&
+          node.scrollWidth > node.clientWidth + 4) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
 
   function ensureCursor() {
     if (cursorEl) return;
@@ -29,7 +48,6 @@
       "transition:none;width:24px;height:24px;" +
       "will-change:left,top;";
     document.body.appendChild(cursorEl);
-    /* Hide real cursor on touch devices */
     document.body.classList.add("touch-device");
   }
 
@@ -89,15 +107,31 @@
     }
   }
 
+  /* If the touch is in an editable element, don't intercept */
+  function isEditable(el) {
+    return el && (el.matches("input:not([type=range]), textarea, select, [contenteditable]") ||
+           el.closest("input:not([type=range]), textarea, select, [contenteditable]"));
+  }
+
   function onStart(e) {
     if (state || e.touches.length !== 1) return;
     const t = e.touches[0];
-    e.preventDefault();
     const x = t.clientX, y = t.clientY;
+    const el = target(x, y);
+
+    /* If touch is inside a scrollable container, let native scrolling handle it */
+    const scrollParent = findScrollable(el);
+    if (scrollParent && !isEditable(el)) {
+      /* Don't create state — let native scroll happen */
+      state = { id: t.identifier, x, y, sx: x, sy: y, t0: Date.now(), moved: false, longFired: false, rightTap: false, mouseDown: false, scrolling: true };
+      return;
+    }
+
+    e.preventDefault();
     state = {
       id: t.identifier, x, y, sx: x, sy: y,
       t0: Date.now(), moved: false, longFired: false, rightTap: false,
-      mouseDown: false,
+      mouseDown: false, scrolling: false,
     };
     show(x, y);
 
@@ -118,7 +152,6 @@
     }, LONG_MS);
 
     /* start mousedown immediately so drag works */
-    const el = target(x, y);
     if (el.closest && el.closest('input[type="range"]')) setRangeFromX(el.closest('input[type="range"]'), x);
     dispatch("mousedown", x, y, el, 0);
     state.mouseDown = true;
@@ -128,8 +161,16 @@
     if (!state) return;
     for (const t of e.touches) {
       if (t.identifier === state.id) {
-        e.preventDefault();
         const x = t.clientX, y = t.clientY;
+
+        /* If we're in scrolling mode, let native scroll handle it */
+        if (state.scrolling) {
+          state.x = x;
+          state.y = y;
+          return;
+        }
+
+        e.preventDefault();
         state.x = x;
         state.y = y;
         if (!state.moved && Math.hypot(x - state.sx, y - state.sy) > MOVE_TOL) {
@@ -148,8 +189,24 @@
 
   function onEnd(e) {
     if (!state) return;
-    e.preventDefault();
     clearTimeout(state._longTimer);
+
+    /* If we were scrolling natively, just clean up */
+    if (state.scrolling) {
+      const wasTap = !state.moved && (Date.now() - state.t0) < 250;
+      state = null;
+      if (wasTap) {
+        /* Treat as a tap — dispatch click */
+        const el = target(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        dispatch("mousedown", e.changedTouches[0].clientX, e.changedTouches[0].clientY, el, 0);
+        dispatch("mouseup", e.changedTouches[0].clientX, e.changedTouches[0].clientY, el, 0);
+        dispatch("click", e.changedTouches[0].clientX, e.changedTouches[0].clientY, el, 0);
+        focusIfEditable(el);
+      }
+      return;
+    }
+
+    e.preventDefault();
     const x = state.x, y = state.y;
     const wasTap = !state.moved && !state.longFired && !state.rightTap;
     const wasLong = state.longFired;
@@ -157,10 +214,7 @@
     const wasDrag = state.moved && state.mouseDown;
     state = null;
 
-    if (wasLong || wasRight) {
-      /* Keep cursor visible, just reset mouseDown */
-      return;
-    }
+    if (wasLong || wasRight) return;
 
     const el = target(x, y);
     if (wasDrag) {
@@ -175,7 +229,6 @@
       dispatch("mouseup", x, y, window, 0);
       lastTap = { t: 0, x, y };
     }
-    /* Keep cursor visible — don't hide on touch */
   }
 
   function onCancel() {

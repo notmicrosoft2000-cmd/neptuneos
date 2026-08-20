@@ -33,7 +33,7 @@ html, body {
   color: var(--text);
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -150,14 +150,35 @@ body.resizing * { cursor: inherit !important; }
 *::-webkit-scrollbar-corner { background: #f0f0f0; }
 *::-webkit-scrollbar-button { display: none; }
 
-/* Touch-friendly scroll hint */
+/* Touch-friendly scroll — all scrollable containers */
 .touch-device .explorer-files,
+.touch-device .explorer-side,
 .touch-device .terminal,
+.touch-device .terminal-output,
 .touch-device .notepad-area,
-.touch-device .player-playlist {
+.touch-device .player-playlist,
+.touch-device .settings-body,
+.touch-device .settings-prog-list,
+.touch-device .recycle-list,
+.touch-device .email-sidebar,
+.touch-device .email-list,
+.touch-device .email-detail,
+.touch-device .email-preview,
+.touch-device .store-grid,
+.touch-device #ce-textarea,
+.touch-device .wc-clock-grid,
+.touch-device #dc-content,
+.touch-device #wd-content,
+.touch-device .browser-bookmarks,
+.touch-device .neptunai-body,
+.touch-device .neptunai-chat,
+.touch-device .game-body,
+.touch-device .calc-history,
+.touch-device .sb-body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 /* ===== Tablet mode start button ===== */

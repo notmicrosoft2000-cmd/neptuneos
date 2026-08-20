@@ -12,7 +12,7 @@
   var MAIN_APPS = ["email", "codeeditor", "mediaplayer", "terminal", "paint", "calculator", "worldclock"];
 
   /* Games shown as a compact sub-list */
-  var GAME_APPS = ["snake", "pacman", "tetris", "minesweeper", "solitaire", "game2048"];
+  var GAME_APPS = ["chess", "sudoku", "snake", "pacman", "tetris", "minesweeper", "solitaire", "game2048"];
 
   var startmenu = {
     el: null,

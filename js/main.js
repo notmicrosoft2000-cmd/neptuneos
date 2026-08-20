@@ -157,6 +157,18 @@
       icon: "assets/icons/worldclock.svg",
       launch: () => OS.apps.worldclock.launch(),
     });
+
+    d.addItem({
+      id: "chess", label: "Chess",
+      icon: "assets/icons/chess.svg",
+      launch: () => OS.apps.chess.launch(),
+    });
+
+    d.addItem({
+      id: "neptunedos", label: "NeptuneDOS",
+      icon: "assets/icons/terminal.svg",
+      launch: () => OS.apps.neptunedos.launch(),
+    });
   }
 
   function boot() {
